@@ -1,195 +1,55 @@
-<template>
-  <div class="modal fade" :class="{ 'fullscreen': fullscreenToDoModal }" @keydown.esc="pressEsc" id="toDoModal"
-    tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header d-flex">
-          <div class="todo-list-selector">
-            <div class="d-flex align-items-center">
-              <div v-show="showingCalendar" class="align-items-center date-picker-btn" @click="showCalendar()">
-                <i class="bi-calendar-event mx-2"></i>
-                <datepicker id="todo-date-picker-input" class="py-2" v-model="pickedDate" :locale="language"
-                  :input-format='"dd/MM/yyyy"' :weekStartsOn="weekStartOnMonday" />
-              </div>
-              <div v-show="!showingCalendar" class="align-items-center date-picker-btn">
-                <div class="align-items-center date-picker-btn py-2" id="customListDropDown" data-bs-toggle="dropdown">
-                  <i class="bi-view-list mx-2"></i>
-                  <div id="todo-list-select">{{ pickedCListName }}</div>
-                </div>
-                <ul class="dropdown-menu" aria-labelledby="customListDropDown">
-                  <li v-for="option in cListOptions" :key="option.listId" :value="option.listId">
-                    <button class="dropdown-item" type="button" @click="pickedCList = option.listId">
-                      <i class="bi-check2" :style="{
-                        visibility: option.listId == pickedCList ? 'visible' : 'hidden',
-                      }"></i>
-                      <span>{{ option.listName }}</span>
-                    </button>
-                  </li>
-                </ul>
-              </div>
-              <div v-if="showCL && showCal" class="d-flex align-items-center">
-                <div class="selector-divider"></div>
-                <i id="btnGroupDrop1" class="bi-chevron-down p-2" type="button" data-bs-toggle="dropdown"></i>
-                <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
-                  <li>
-                    <button class="dropdown-item" type="button" @click="showingCalendar = true">
-                      <i class="bi-calendar-check"></i>
-                      <span>{{ $t("settings.calendar") }}</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button class="dropdown-item" type="button" @click="showingCalendar = false">
-                      <i class="bi-view-list"></i>
-                      <span>{{ $t("settings.customLists") }}</span>
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="d-flex ms-auto align-items-center">
-            <time-picker :time="todo.time" @time-selected="changeTime"></time-picker>
-            <i :class="{ 'bi-bell': !todo.alarm, 'bi-bell-fill': todo.alarm }" class="header-menu-icons"
-              @click="changeAlarm" :title="$t('todoDetails.alarm')"></i>
-            <repeating-event v-if="showingCalendar" :repeatingEvent="todo.repeatingEvent" :todo="todo"
-              @repeatingEventSelected="changeRepeatingEvent"></repeating-event>
-            <color-picker :color="todo.color" @color-selected="changeColor"></color-picker>
-            <i id="btnTaskOptionMenu" class="bi-three-dots-vertical header-menu-icons" type="button"
-              data-bs-toggle="dropdown" :title="$t('todoDetails.actions')"></i>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="btnTaskOptionMenu">
-              <li>
-                <button class="dropdown-item" type="button" @click="copyTodo">
-                  <i class="bi-clipboard"></i>
-                  <span>{{ $t("donate.copy") }}</span>
-                </button>
-              </li>
-              <li>
-                <button class="dropdown-item" type="button" @click="duplicateTodo" data-bs-dismiss="modal">
-                  <i class="bi-back"></i>
-                  <span>{{ $t("todoDetails.duplicate") }}</span>
-                </button>
-              </li>
-              <li>
-                <hr class="dropdown-divider" />
-              </li>
-              <li>
-                <button class="dropdown-item" type="button" @click="removeTodo" data-bs-dismiss="modal">
-                  <i class="bi-trash"></i> <span>{{ $t("ui.remove") }}</span>
-                </button>
-              </li>
-              <li v-if="todo.repeatingEvent">
-                <button class="dropdown-item" type="button" @click="removeAll" data-bs-dismiss="modal">
-                  <i class="bi-trash"></i> <span>{{ $t("ui.removeAll") }}</span>
-                </button>
-              </li>
-            </ul>
-            <div>
-              <i class="bi-x close-modal header-menu-icons" ref="closeModal" data-bs-dismiss="modal"
-                :title="$t('todoDetails.close')"></i>
-            </div>
-          </div>
-        </div>
-        <div class="modal-body">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="" id="todo-header" v-model="todo.checked"
-              @change="checkTodoClickhandler(false)" />
-            <div class="title-container">
-              <label v-show="!editingTitle" class="form-check-label todo-title" for="todo-header"
-                :class="{ 'completed-task': todo.checked }" @dblclick="editTitle">
-                <span v-html="todoText"></span>
-              </label>
-              <label v-show="!editingTitle && todo.text == ''" class="form-check-label todo-title todo-title-empty-title"
-                for="todo-header" @dblclick="editTitle">
-                {{ $t("todoDetails.taskTitle") }}
-              </label>
-              <input v-show="editingTitle" class="todo-title-input" type="text" v-model="todo.text" ref="titleInput"
-                :placeholder="$t('todoDetails.taskTitle')" @blur="doneEditTitle()" @keyup.enter="doneEditTitle()" />
-              <description-text-area :todoDesc="todo.desc"
-                @updated-description="changeDescription"></description-text-area>
-            </div>
-          </div>
-          <div class="mt-3"></div>
-          <div class="horizontal-divider mb-0 mt-3"></div>
-          <ul class="sub-tasks">
-            <li v-for="(subTask, index) in todo.subTaskList" :key="index" class="sub-task">
-              <div v-show="!subTask.editing" draggable="true" @dragstart="startDrag($event, index)" @dragover.prevent>
-                <div class="d-flex flex-row align-items-center" :class="{ checked: subTask.checked }">
-                  <input class="form-check-input flex-grow-1 mx-3 mt-0" type="checkbox" v-model="subTask.checked"
-                    :id="'sub-task-' + index" @change="changeSubTaskClickhandler(index)" />
-                  <label class="form-check-label" :for="'sub-task-' + index" @dragenter.self="onDragenter($event)"
-                    @dragleave.self="onDragleave($event)" @drop="onDrop($event, index)" @dragover.prevent>
-                    <span v-html="linkifyText(subTask.text)"></span>
-                  </label>
-                  <i class="bi-trash mx-2" :title="$t('ui.remove')" @click="removeSubTask(index)"></i>
-                </div>
-              </div>
-              <input v-show="subTask.editing" v-model="subTask.text" @blur="doneEditSubTask(index)"
-                @keyup.enter="doneEditSubTask(index)" :ref="'subTaskEdit' + index" class="edit-sub-task" />
-            </li>
-            <div class="new-sub-task d-flex align-items-center">
-              <label for="new-sub-task"><i class="bi-plus-square mx-3"></i></label>
-              <input type="text" id="new-sub-task" :placeholder="$t('todoDetails.addSubTask')" autocomplete="off"
-                @blur="addSubTask()" @keyup.enter="addSubTask()" v-model="newSubTask.text" ref="newSubTask" />
-            </div>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1056">
-    <toast-message id="copiedTaskToClipboard" :text="$t('todoDetails.copiedTaskToClipboard')"></toast-message>
-    <toast-message id="taskRemoved" :text="$t('todoDetails.taskRemoved')" :sub-text="'(' + $t('ui.undo') + ')'"
-      @subTextClick="undoRemoveTask"></toast-message>
-    <toast-message id="recurrentTaskRemoved" :text="$t('todoDetails.recurrentTaskRemoved')"></toast-message>
-    <toast-message id="taskDuplicated" :text="$t('todoDetails.taskDuplicated')"></toast-message>
-  </div>
-
-  <comfirm-modal :id="'removeReModalToDoDetails'" :title="$t('ui.removeRepeatingTask')"
-    :text="$t('ui.repeatingTaskRemoveConfirm')" :ico="'bi-x-circle'" :okText="$t('ui.remove')" @on-ok="removeAllComfirmed"
-    @on-cancel="removeAllCanceled"></comfirm-modal>
-</template>
-
 <script>
-import Datepicker from "vue3-datepicker";
-import toDoListRepository from "../../repositories/toDoListRepository";
-import moment from "moment";
-import dbRepository from "../../repositories/dbRepository";
-import { Toast, Modal } from "bootstrap";
-import toastMessage from "../../components/toastMessage";
-import colorPicker from "./colorPicker";
-import timePicker from "./timePicker";
-import repeatingEvent from "./repeatingEvent";
-import notifications from "../../helpers/notifications";
-import repeatingEventHelper from "../../helpers/repeatingEvents.js";
-import languageHelper from "../../helpers/languageHelper.js"
-import repeatingEventRepository from "../../repositories/repeatingEventRepository";
-import comfirmModal from "../../components/comfirmModal.vue";
-import linkifyStr from 'linkify-string';
-import ClickHandler from "@manuelernestog/click-handler";
-import tasksHelper from "../../helpers/tasksHelper";
+import ClickHandler from '@manuelernestog/click-handler'
+import { Modal, Toast } from 'bootstrap'
+import linkifyStr from 'linkify-string'
+import moment from 'moment'
+import Datepicker from 'vue3-datepicker'
+import comfirmModal from '../../components/comfirmModal.vue'
+import toastMessage from '../../components/toastMessage'
+import languageHelper from '../../helpers/languageHelper.js'
+import notifications from '../../helpers/notifications'
+import repeatingEventHelper from '../../helpers/repeatingEvents.js'
+import tasksHelper from '../../helpers/tasksHelper'
+import dbRepository from '../../repositories/dbRepository'
+import repeatingEventRepository from '../../repositories/repeatingEventRepository'
+import toDoListRepository from '../../repositories/toDoListRepository'
+import colorPicker from './colorPicker'
 import descriptionTextArea from './descriptionTextArea.vue'
+import repeatingEvent from './repeatingEvent'
+import timePicker from './timePicker'
 
 export default {
-  name: "toDoModal",
+  name: 'ToDoModal',
+  components: {
+    ColorPicker: colorPicker,
+    Datepicker,
+    ToastMessage: toastMessage,
+    TimePicker: timePicker,
+    RepeatingEvent: repeatingEvent,
+    ComfirmModal: comfirmModal,
+    DescriptionTextArea: descriptionTextArea,
+  },
+  props: {
+    selectedTodo: { required: true, type: Object },
+  },
   data() {
     return {
       pickedDate: new Date(),
-      pickedCList: "",
-      pickedCListName: "",
+      pickedCList: '',
+      pickedCListName: '',
       cListOptions: [],
       todo: {
-        text: "",
+        text: '',
         checked: false,
-        desc: "",
+        desc: '',
         subTaskList: [],
         alarm: false,
       },
       todoList: null,
       index: 0,
-      newSubTask: { text: "", checked: false, editing: false },
-      tempTitle: "",
-      tempSubTask: "",
+      newSubTask: { text: '', checked: false, editing: false },
+      tempTitle: '',
+      tempSubTask: '',
       editingTitle: false,
       showingCalendar: true,
       loadingView: false,
@@ -197,211 +57,279 @@ export default {
       clickhandler: new ClickHandler(),
     }
   },
-  props: {
-    selectedTodo: { required: true, type: Object },
+  computed: {
+    language() {
+      const lang = this.$store.getters.config.language
+      return languageHelper.getLanguagePack(lang)
+    },
+    showCL() {
+      return this.$store.getters.config.customList
+    },
+    showCal() {
+      return this.$store.getters.config.calendar
+    },
+    todoText() {
+      return linkifyStr(this.todo.text, this.options)
+    },
+    fullscreenToDoModal() {
+      return this.$store.getters.config.fullscreenToDoModal
+    },
+    moveSubtaskToBotttom() {
+      return this.$store.getters.config.moveCompletedSubTaskToBottom
+    },
+    weekStartOnMonday() {
+      return this.$store.getters.config.weekStartOnMonday ? 1 : 0
+    },
   },
-  components: {
-    colorPicker,
-    Datepicker,
-    toastMessage,
-    timePicker,
-    repeatingEvent,
-    comfirmModal,
-    descriptionTextArea
+  watch: {
+    selectedTodo(newVal) {
+      this.todoList = this.$store.getters.todoLists[newVal.toDo.listId]
+      this.index = newVal.index
+      this.todo = this.todoList[this.index]
+      if (this.todo.desc == undefined) {
+        this.todo.desc = ''
+        this.todo.subTaskList = []
+        this.todo.color = 'none'
+        this.todo.priority = 0
+        this.todo.tags = []
+        this.todo.time = null
+        this.todo.alarm = false
+        this.todo.repeatingEvent = null
+      }
+      this.showingCalendar = moment(this.todo.listId, 'YYYYMMDD', true).isValid()
+      this.getCListOptions()
+      this.loadingView = true
+      if (this.showingCalendar) {
+        this.pickedDate = moment(this.todo.listId).toDate()
+        this.pickedCList = ''
+        this.pickedCListName = ''
+      }
+      else {
+        this.cListOptions.forEach((x) => {
+          if (x.listId == this.todo.listId) {
+            this.pickedCListName = x.listName
+          }
+        })
+        this.pickedCList = this.todo.listId
+        this.pickedDate = null
+      }
+      this.$nextTick(function () {
+        this.loadingView = false
+      })
+    },
+    pickedDate(newVal) {
+      if (this.loadingView)
+        return
+
+      const newListId = moment(newVal).format('YYYYMMDD')
+      if (newListId != this.todo.listId) {
+        this.moveToTodoList(newListId)
+      }
+    },
+    pickedCList(newVal) {
+      if (this.loadingView)
+        return
+
+      this.moveToTodoList(newVal)
+    },
   },
   methods: {
-    removeSubTask: function (index) {
-      this.todo.subTaskList.splice(index, 1);
-      this.updateTodo();
+    removeSubTask(index) {
+      this.todo.subTaskList.splice(index, 1)
+      this.updateTodo()
     },
-    addSubTask: function () {
-      if (this.newSubTask.text != "") {
-        var newTodo = {
+    addSubTask() {
+      if (this.newSubTask.text != '') {
+        const newTodo = {
           text: this.newSubTask.text,
           checked: false,
           editing: false,
-        };
-        this.todo.subTaskList.push(newTodo);
-        this.newSubTask.text = "";
+        }
+        this.todo.subTaskList.push(newTodo)
+        this.newSubTask.text = ''
       }
-      this.updateTodo();
+      this.updateTodo()
     },
-    cancelAddSubTask: function () {
-      this.newSubTask.text = "";
-      this.$refs["newSubTask"].blur();
+    cancelAddSubTask() {
+      this.newSubTask.text = ''
+      this.$refs.newSubTask.blur()
     },
-    editSubTask: function (index) {
-      this.todo.subTaskList[index].editing = true;
+    editSubTask(index) {
+      this.todo.subTaskList[index].editing = true
       this.$nextTick(function () {
-        this.$refs["subTaskEdit" + index][0].focus();
-        this.$refs["subTaskEdit" + index][0].select();
-        this.tempSubTask = this.todo.subTaskList[index].text;
-      });
+        this.$refs[`subTaskEdit${index}`][0].focus()
+        this.$refs[`subTaskEdit${index}`][0].select()
+        this.tempSubTask = this.todo.subTaskList[index].text
+      })
     },
-    doneEditSubTask: function (index) {
-      this.todo.subTaskList[index].editing = false;
-      this.updateTodo();
+    doneEditSubTask(index) {
+      this.todo.subTaskList[index].editing = false
+      this.updateTodo()
     },
-    cancelEditSubTask: function (index) {
-      this.todo.subTaskList[index].text = this.tempSubTask;
-      this.$refs["subTaskEdit" + index].blur();
+    cancelEditSubTask(index) {
+      this.todo.subTaskList[index].text = this.tempSubTask
+      this.$refs[`subTaskEdit${index}`].blur()
     },
-    editTitle: function () {
-      this.editingTitle = true;
+    editTitle() {
+      this.editingTitle = true
       this.$nextTick(function () {
-        this.tempTitle = this.todo.text;
-        this.$refs["titleInput"].focus();
-        this.$refs["titleInput"].select();
-      });
+        this.tempTitle = this.todo.text
+        this.$refs.titleInput.focus()
+        this.$refs.titleInput.select()
+      })
     },
-    cancelEditTitle: function () {
-      this.todo.text = this.tempTitle;
-      this.$refs["titleInput"].blur();
+    cancelEditTitle() {
+      this.todo.text = this.tempTitle
+      this.$refs.titleInput.blur()
     },
-    doneEditTitle: function () {
-      this.editingTitle = false;
-      this.updateTodo();
+    doneEditTitle() {
+      this.editingTitle = false
+      this.updateTodo()
     },
-    startDrag: function (event, index) {
-      event.dataTransfer.setData("index", index);
+    startDrag(event, index) {
+      event.dataTransfer.setData('index', index)
     },
-    onDragenter: function (event) {
-      event.target.parentElement.classList.add("drag-hover");
+    onDragenter(event) {
+      event.target.parentElement.classList.add('drag-hover')
     },
-    onDragleave: function (event) {
-      event.target.parentElement.classList.remove("drag-hover");
+    onDragleave(event) {
+      event.target.parentElement.classList.remove('drag-hover')
     },
-    onDrop: function (event, to_index) {
-      let from_index = event.dataTransfer.getData("index");
-      let sub_task = this.todo.subTaskList.splice(parseInt(from_index), 1)[0];
-      this.todo.subTaskList.splice(to_index, 0, sub_task);
-      event.target.parentElement.classList.remove("drag-hover");
-      this.updateTodo();
+    onDrop(event, to_index) {
+      const from_index = event.dataTransfer.getData('index')
+      const sub_task = this.todo.subTaskList.splice(Number.parseInt(from_index), 1)[0]
+      this.todo.subTaskList.splice(to_index, 0, sub_task)
+      event.target.parentElement.classList.remove('drag-hover')
+      this.updateTodo()
     },
-    showCalendar: function () {
-      document.getElementById("todo-date-picker-input").focus();
+    showCalendar() {
+      document.getElementById('todo-date-picker-input').focus()
     },
-    checkTodoClickhandler: function (resetRepeatinEvent = true) {
-      this.clickhandler.handle(function () { this.checkTodo(resetRepeatinEvent) }.bind(this), function () { })
+    checkTodoClickhandler(resetRepeatinEvent = true) {
+      this.clickhandler.handle(() => { this.checkTodo(resetRepeatinEvent) }, () => { })
     },
-    checkTodo: function (resetRepeatinEvent = true) {
+    checkTodo(resetRepeatinEvent = true) {
       if (this.todo.checked) {
         if (this.$store.getters.config.moveCompletedTaskToBottom) {
-          this.$store.commit("moveTodoToEnd", { toDoListId: this.todo.listId, index: this.index });
+          this.$store.commit('moveTodoToEnd', { toDoListId: this.todo.listId, index: this.index })
         }
-        this.index = this.todoList.length - 1;
+        this.index = this.todoList.length - 1
       }
-      this.updateTodoWithReorder(resetRepeatinEvent);
+      this.updateTodoWithReorder(resetRepeatinEvent)
     },
-    updateTodo: function (resetRepeatinEvent = true) {
+    updateTodo(resetRepeatinEvent = true) {
       if (resetRepeatinEvent) {
-        this.todo.repeatingEvent = null;
+        this.todo.repeatingEvent = null
       }
-      this.updateTodoList(this.todo.listId, this.todoList);
+      this.updateTodoList(this.todo.listId, this.todoList)
     },
-    updateTodoWithReorder: function (resetRepeatinEvent = true) {
+    updateTodoWithReorder(resetRepeatinEvent = true) {
       if (resetRepeatinEvent) {
-        this.todo.repeatingEvent = null;
+        this.todo.repeatingEvent = null
       }
 
       if (this.$store.getters.config.autoReorderTasks) {
-        this.updateTodoList(this.todo.listId, tasksHelper.reorderTasksList(this.todoList));
-      } else {
-        this.updateTodoList(this.todo.listId, this.todoList);
+        this.updateTodoList(this.todo.listId, tasksHelper.reorderTasksList(this.todoList))
+      }
+      else {
+        this.updateTodoList(this.todo.listId, this.todoList)
       }
     },
-    updateTodoList: function (todoListId, TodoList) {
-      notifications.refreshDayNotifications(this, todoListId);
-      toDoListRepository.update(todoListId, TodoList);
+    updateTodoList(todoListId, TodoList) {
+      notifications.refreshDayNotifications(this, todoListId)
+      toDoListRepository.update(todoListId, TodoList)
     },
-    getCListOptions: function () {
-      this.cListOptions = this.$store.getters.cTodoListIds;
+    getCListOptions() {
+      this.cListOptions = this.$store.getters.cTodoListIds
     },
-    moveToTodoList: function (newListID) {
-      if (newListID == "Invalid date" || newListID == "") return;
+    moveToTodoList(newListID) {
+      if (newListID == 'Invalid date' || newListID == '')
+        return
 
-      if (moment(newListID, "YYYYMMDD", true).isValid()) {
-        this.pickedCListName = "";
-        this.pickedCList = "";
-      } else {
+      if (moment(newListID, 'YYYYMMDD', true).isValid()) {
+        this.pickedCListName = ''
+        this.pickedCList = ''
+      }
+      else {
         this.cListOptions.forEach((x) => {
           if (x.listId == this.pickedCList) {
-            this.pickedCListName = x.listName;
+            this.pickedCListName = x.listName
           }
-        });
+        })
       }
 
-      let oldListId = this.todo.listId;
-      this.todoList.splice(this.index, 1);
-      this.updateTodoList(oldListId, this.todoList);
-      this.todo.listId = newListID;
-      this.todo.repeatingEvent = null;
+      const oldListId = this.todo.listId
+      this.todoList.splice(this.index, 1)
+      this.updateTodoList(oldListId, this.todoList)
+      this.todo.listId = newListID
+      this.todo.repeatingEvent = null
       if (this.$store.getters.todoLists[newListID]) {
-        this.$store.commit("addTodo", this.todo);
-        this.todoList = this.$store.getters.todoLists[this.todo.listId];
-        this.index = this.todoList.length - 1;
-        this.todo = this.todoList[this.index];
+        this.$store.commit('addTodo', this.todo)
+        this.todoList = this.$store.getters.todoLists[this.todo.listId]
+        this.index = this.todoList.length - 1
+        this.todo = this.todoList[this.index]
 
         if (this.$store.getters.config.autoReorderTasks) {
-          this.updateTodoList(newListID, tasksHelper.reorderTasksList(this.todoList));
-        } else {
-          this.updateTodoList(newListID, this.todoList);
+          this.updateTodoList(newListID, tasksHelper.reorderTasksList(this.todoList))
         }
-
-      } else {
-        this.loadToDoFormDB(newListID);
+        else {
+          this.updateTodoList(newListID, this.todoList)
+        }
+      }
+      else {
+        this.loadToDoFormDB(newListID)
       }
     },
-    loadToDoFormDB: function (newListID) {
-      let db_req = dbRepository.open();
-      var instancePointer = this;
+    loadToDoFormDB(newListID) {
+      const db_req = dbRepository.open()
+      const instancePointer = this
       db_req.onsuccess = function (event) {
-        let db = event.target.result;
-        var get_req = dbRepository.get(db, "todo_lists", newListID);
+        const db = event.target.result
+        const get_req = dbRepository.get(db, 'todo_lists', newListID)
         get_req.onsuccess = function (event) {
-          let newTodoList = event.target.result ? event.target.result : [];
-          newTodoList.push(instancePointer.todo);
-          instancePointer.todoList = newTodoList;
-          instancePointer.index = newTodoList.length - 1;
-          this.updateTodoList(newListID, instancePointer.todoList);
-        }.bind(this);
-      }.bind(this);
+          const newTodoList = event.target.result ? event.target.result : []
+          newTodoList.push(instancePointer.todo)
+          instancePointer.todoList = newTodoList
+          instancePointer.index = newTodoList.length - 1
+          this.updateTodoList(newListID, instancePointer.todoList)
+        }.bind(this)
+      }.bind(this)
     },
-    removeTodo: function () {
-      this.$store.commit("setUndoElement", { type: 'task', todo: this.todo, index: this.index });
-      this.$store.commit("removeTodo", { toDoListId: this.todo.listId, index: this.index });
-      this.updateTodoList(this.todo.listId, this.$store.getters.todoLists[this.todo.listId]);
-      let toast = new Toast(document.getElementById("taskRemoved"));
-      toast.show();
+    removeTodo() {
+      this.$store.commit('setUndoElement', { type: 'task', todo: this.todo, index: this.index })
+      this.$store.commit('removeTodo', { toDoListId: this.todo.listId, index: this.index })
+      this.updateTodoList(this.todo.listId, this.$store.getters.todoLists[this.todo.listId])
+      const toast = new Toast(document.getElementById('taskRemoved'))
+      toast.show()
     },
-    undoRemoveTask: function () {
-      let obj = this.$store.getters.undoElement;
-      this.$store.commit("insertTodo", { toDoListId: obj.todo.listId, index: obj.index, toDo: obj.todo });
-      this.updateTodoList(obj.todo.listId, this.$store.getters.todoLists[obj.todo.listId]);
-      let toast = new Toast(document.getElementById("taskRemoved"));
-      toast.hide();
+    undoRemoveTask() {
+      const obj = this.$store.getters.undoElement
+      this.$store.commit('insertTodo', { toDoListId: obj.todo.listId, index: obj.index, toDo: obj.todo })
+      this.updateTodoList(obj.todo.listId, this.$store.getters.todoLists[obj.todo.listId])
+      const toast = new Toast(document.getElementById('taskRemoved'))
+      toast.hide()
     },
-    removeAll: function () {
-      let modal = new Modal(document.getElementById("removeReModalToDoDetails"), { backdrop: "static", });
-      modal.show();
+    removeAll() {
+      const modal = new Modal(document.getElementById('removeReModalToDoDetails'), { backdrop: 'static' })
+      modal.show()
     },
     removeAllComfirmed() {
-      repeatingEventRepository.remove(this.todo.repeatingEvent);
-      this.$store.commit("removeRepeatingEvent", this.todo.repeatingEvent);
+      repeatingEventRepository.remove(this.todo.repeatingEvent)
+      this.$store.commit('removeRepeatingEvent', this.todo.repeatingEvent)
       this.$store.getters.selectedDates.forEach((date) => {
-        repeatingEventHelper.removeGeneratedRepeatingEvents(date, this);
-      });
-      this.$store.commit("resetRepeatingEventDateCache");
-      this.$store.commit("loadRepeatingEventDateCache", this.$store.getters.repeatingEventList);
-      let toast = new Toast(document.getElementById("recurrentTaskRemoved"));
-      toast.show();
+        repeatingEventHelper.removeGeneratedRepeatingEvents(date, this)
+      })
+      this.$store.commit('resetRepeatingEventDateCache')
+      this.$store.commit('loadRepeatingEventDateCache', this.$store.getters.repeatingEventList)
+      const toast = new Toast(document.getElementById('recurrentTaskRemoved'))
+      toast.show()
     },
     removeAllCanceled() {
-      let modal = new Modal(document.getElementById("toDoModal"));
-      modal.show();
+      const modal = new Modal(document.getElementById('toDoModal'))
+      modal.show()
     },
-    duplicateTodo: function () {
-      var newTodo = {
+    duplicateTodo() {
+      const newTodo = {
         text: this.todo.text,
         checked: this.todo.checked,
         listId: this.todo.listId,
@@ -413,158 +341,276 @@ export default {
         time: this.todo.time,
         alarm: this.todo.alarm,
         repeatingEvent: null,
-      };
-      this.$store.commit("addTodo", newTodo);
+      }
+      this.$store.commit('addTodo', newTodo)
 
       if (this.$store.getters.config.autoReorderTasks) {
-        this.updateTodoList(this.todo.listId, tasksHelper.reorderTasksList(this.$store.getters.todoLists[this.todo.listId]));
-      } else {
-        this.updateTodoList(this.todo.listId, this.$store.getters.todoLists[this.todo.listId]);
+        this.updateTodoList(this.todo.listId, tasksHelper.reorderTasksList(this.$store.getters.todoLists[this.todo.listId]))
+      }
+      else {
+        this.updateTodoList(this.todo.listId, this.$store.getters.todoLists[this.todo.listId])
       }
 
-      let toast = new Toast(document.getElementById("taskDuplicated"));
-      toast.show();
+      const toast = new Toast(document.getElementById('taskDuplicated'))
+      toast.show()
     },
     async copyTodo() {
-      await navigator.clipboard.writeText(this.todoToString());
-      let toast = new Toast(document.getElementById("copiedTaskToClipboard"));
-      toast.show();
+      await navigator.clipboard.writeText(this.todoToString())
+      const toast = new Toast(document.getElementById('copiedTaskToClipboard'))
+      toast.show()
     },
     todoToString() {
-      var text = "";
-      text += this.todo.text;
-      if (this.todo.desc != "") {
-        text += "\n\n";
-        text += this.$t("todoDetails.notes") + ":\n\n";
-        text += this.todo.desc;
+      let text = ''
+      text += this.todo.text
+      if (this.todo.desc != '') {
+        text += '\n\n'
+        text += `${this.$t('todoDetails.notes')}:\n\n`
+        text += this.todo.desc
       }
       if (this.todo.subTaskList.length > 0) {
-        text += "\n\n";
-        text += this.$t("todoDetails.subtasks") + ":\n\n";
-        this.todo.subTaskList.forEach(function (task) {
-          text += "- " + task.text + "\n";
-        });
+        text += '\n\n'
+        text += `${this.$t('todoDetails.subtasks')}:\n\n`
+        this.todo.subTaskList.forEach((task) => {
+          text += `- ${task.text}\n`
+        })
       }
-      return text;
+      return text
     },
     changeColor(color) {
-      this.todo.color = color;
-      this.updateTodo();
+      this.todo.color = color
+      this.updateTodo()
     },
     changeTime(time) {
-      this.todo.time = time;
+      this.todo.time = time
       if (!time) {
-        this.todo.alarm = false;
+        this.todo.alarm = false
       }
-      this.updateTodoWithReorder();
+      this.updateTodoWithReorder()
     },
     changeAlarm() {
       if (this.todo.time) {
-        this.todo.alarm = this.todo.alarm ? false : true;
-        this.updateTodo();
+        this.todo.alarm = !this.todo.alarm
+        this.updateTodo()
       }
     },
     changeDescription(desc) {
-      this.todo.desc = desc;
-      this.updateTodo();
+      this.todo.desc = desc
+      this.updateTodo()
     },
     changeRepeatingEvent(repeatingEvent) {
-      this.todo.repeatingEvent = repeatingEvent;
-      this.updateTodo(false);
+      this.todo.repeatingEvent = repeatingEvent
+      this.updateTodo(false)
     },
-    changeSubTaskClickhandler: function (index) {
-      this.clickhandler.handle(function () { this.changeSubTask(index) }.bind(this), function () { this.editSubTask(index) }.bind(this), index);
+    changeSubTaskClickhandler(index) {
+      this.clickhandler.handle(() => { this.changeSubTask(index) }, () => { this.editSubTask(index) }, index)
     },
-    changeSubTask: function (index) {
+    changeSubTask(index) {
       if (this.todo.subTaskList[index].checked && this.moveSubtaskToBotttom) {
-        this.todo.subTaskList.push(this.todo.subTaskList.splice(index, 1)[0]);
+        this.todo.subTaskList.push(this.todo.subTaskList.splice(index, 1)[0])
       }
-      this.updateTodo();
+      this.updateTodo()
     },
-    linkifyText: function (text) {
-      return linkifyStr(text, this.options);
+    linkifyText(text) {
+      return linkifyStr(text, this.options)
     },
-    pressEsc: function () {
-      if (document.activeElement.id == "toDoModal") {
-        this.$refs.closeModal.click();
+    pressEsc() {
+      if (document.activeElement.id == 'toDoModal') {
+        this.$refs.closeModal.click()
       }
-    }
+    },
   },
-  watch: {
-    selectedTodo: function (newVal) {
-      this.todoList = this.$store.getters.todoLists[newVal.toDo.listId];
-      this.index = newVal.index;
-      this.todo = this.todoList[this.index];
-      if (this.todo["desc"] == undefined) {
-        this.todo["desc"] = "";
-        this.todo["subTaskList"] = [];
-        this.todo["color"] = "none";
-        this.todo["priority"] = 0;
-        this.todo["tags"] = [];
-        this.todo["time"] = null;
-        this.todo["alarm"] = false;
-        this.todo["repeatingEvent"] = null;
-      }
-      this.showingCalendar = moment(this.todo.listId, "YYYYMMDD", true).isValid();
-      this.getCListOptions();
-      this.loadingView = true;
-      if (this.showingCalendar) {
-        this.pickedDate = moment(this.todo.listId).toDate();
-        this.pickedCList = "";
-        this.pickedCListName = "";
-      } else {
-        this.cListOptions.forEach((x) => {
-          if (x.listId == this.todo.listId) {
-            this.pickedCListName = x.listName;
-          }
-        });
-        this.pickedCList = this.todo.listId;
-        this.pickedDate = null;
-      }
-      this.$nextTick(function () {
-        this.loadingView = false;
-      });
-    },
-    pickedDate: function (newVal) {
-      if (this.loadingView) return;
-
-      var newListId = moment(newVal).format("YYYYMMDD");
-      if (newListId != this.todo.listId) {
-        this.moveToTodoList(newListId);
-      }
-    },
-    pickedCList: function (newVal) {
-      if (this.loadingView) return;
-
-      this.moveToTodoList(newVal);
-    }
-  },
-  computed: {
-    language: function () {
-      let lang = this.$store.getters.config.language;
-      return languageHelper.getLanguagePack(lang);
-    },
-    showCL: function () {
-      return this.$store.getters.config.customList;
-    },
-    showCal: function () {
-      return this.$store.getters.config.calendar;
-    },
-    todoText: function () {
-      return linkifyStr(this.todo.text, this.options);
-    },
-    fullscreenToDoModal: function () {
-      return this.$store.getters.config.fullscreenToDoModal;
-    },
-    moveSubtaskToBotttom: function () {
-      return this.$store.getters.config.moveCompletedSubTaskToBottom;
-    },
-    weekStartOnMonday: function () {
-      return this.$store.getters.config.weekStartOnMonday ? 1 : 0;
-    }
-  },
-};
+}
 </script>
+
+<template>
+  <div
+    id="toDoModal" class="modal fade" :class="{ fullscreen: fullscreenToDoModal }" tabindex="-1"
+    aria-hidden="true" @keydown.esc="pressEsc"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header d-flex">
+          <div class="todo-list-selector">
+            <div class="d-flex align-items-center">
+              <div v-show="showingCalendar" class="align-items-center date-picker-btn" @click="showCalendar()">
+                <i class="bi-calendar-event mx-2" />
+                <Datepicker
+                  id="todo-date-picker-input" v-model="pickedDate" class="py-2" :locale="language"
+                  input-format="dd/MM/yyyy" :week-starts-on="weekStartOnMonday"
+                />
+              </div>
+              <div v-show="!showingCalendar" class="align-items-center date-picker-btn">
+                <div id="customListDropDown" class="align-items-center date-picker-btn py-2" data-bs-toggle="dropdown">
+                  <i class="bi-view-list mx-2" />
+                  <div id="todo-list-select">
+                    {{ pickedCListName }}
+                  </div>
+                </div>
+                <ul class="dropdown-menu" aria-labelledby="customListDropDown">
+                  <li v-for="option in cListOptions" :key="option.listId" :value="option.listId">
+                    <button class="dropdown-item" type="button" @click="pickedCList = option.listId">
+                      <i
+                        class="bi-check2" :style="{
+                          visibility: option.listId == pickedCList ? 'visible' : 'hidden',
+                        }"
+                      />
+                      <span>{{ option.listName }}</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              <div v-if="showCL && showCal" class="d-flex align-items-center">
+                <div class="selector-divider" />
+                <i id="btnGroupDrop1" class="bi-chevron-down p-2" type="button" data-bs-toggle="dropdown" />
+                <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                  <li>
+                    <button class="dropdown-item" type="button" @click="showingCalendar = true">
+                      <i class="bi-calendar-check" />
+                      <span>{{ $t("settings.calendar") }}</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button class="dropdown-item" type="button" @click="showingCalendar = false">
+                      <i class="bi-view-list" />
+                      <span>{{ $t("settings.customLists") }}</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex ms-auto align-items-center">
+            <TimePicker :time="todo.time" @time-selected="changeTime" />
+            <i
+              :class="{ 'bi-bell': !todo.alarm, 'bi-bell-fill': todo.alarm }" class="header-menu-icons"
+              :title="$t('todoDetails.alarm')" @click="changeAlarm"
+            />
+            <RepeatingEvent
+              v-if="showingCalendar" :repeating-event="todo.repeatingEvent" :todo="todo"
+              @repeating-event-selected="changeRepeatingEvent"
+            />
+            <ColorPicker :color="todo.color" @color-selected="changeColor" />
+            <i
+              id="btnTaskOptionMenu" class="bi-three-dots-vertical header-menu-icons" type="button"
+              data-bs-toggle="dropdown" :title="$t('todoDetails.actions')"
+            />
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="btnTaskOptionMenu">
+              <li>
+                <button class="dropdown-item" type="button" @click="copyTodo">
+                  <i class="bi-clipboard" />
+                  <span>{{ $t("donate.copy") }}</span>
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item" type="button" data-bs-dismiss="modal" @click="duplicateTodo">
+                  <i class="bi-back" />
+                  <span>{{ $t("todoDetails.duplicate") }}</span>
+                </button>
+              </li>
+              <li>
+                <hr class="dropdown-divider">
+              </li>
+              <li>
+                <button class="dropdown-item" type="button" data-bs-dismiss="modal" @click="removeTodo">
+                  <i class="bi-trash" /> <span>{{ $t("ui.remove") }}</span>
+                </button>
+              </li>
+              <li v-if="todo.repeatingEvent">
+                <button class="dropdown-item" type="button" data-bs-dismiss="modal" @click="removeAll">
+                  <i class="bi-trash" /> <span>{{ $t("ui.removeAll") }}</span>
+                </button>
+              </li>
+            </ul>
+            <div>
+              <i
+                ref="closeModal" class="bi-x close-modal header-menu-icons" data-bs-dismiss="modal"
+                :title="$t('todoDetails.close')"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="form-check">
+            <input
+              id="todo-header" v-model="todo.checked" class="form-check-input" type="checkbox" value=""
+              @change="checkTodoClickhandler(false)"
+            >
+            <div class="title-container">
+              <label
+                v-show="!editingTitle" class="form-check-label todo-title" for="todo-header"
+                :class="{ 'completed-task': todo.checked }" @dblclick="editTitle"
+              >
+                <span v-html="todoText" />
+              </label>
+              <label
+                v-show="!editingTitle && todo.text == ''" class="form-check-label todo-title todo-title-empty-title"
+                for="todo-header" @dblclick="editTitle"
+              >
+                {{ $t("todoDetails.taskTitle") }}
+              </label>
+              <input
+                v-show="editingTitle" ref="titleInput" v-model="todo.text" class="todo-title-input" type="text"
+                :placeholder="$t('todoDetails.taskTitle')" @blur="doneEditTitle()" @keyup.enter="doneEditTitle()"
+              >
+              <DescriptionTextArea
+                :todo-desc="todo.desc"
+                @updated-description="changeDescription"
+              />
+            </div>
+          </div>
+          <div class="mt-3" />
+          <div class="horizontal-divider mb-0 mt-3" />
+          <ul class="sub-tasks">
+            <li v-for="(subTask, index) in todo.subTaskList" :key="index" class="sub-task">
+              <div v-show="!subTask.editing" draggable="true" @dragstart="startDrag($event, index)" @dragover.prevent>
+                <div class="d-flex flex-row align-items-center" :class="{ checked: subTask.checked }">
+                  <input
+                    :id="`sub-task-${index}`" v-model="subTask.checked" class="form-check-input flex-grow-1 mx-3 mt-0"
+                    type="checkbox" @change="changeSubTaskClickhandler(index)"
+                  >
+                  <label
+                    class="form-check-label" :for="`sub-task-${index}`" @dragenter.self="onDragenter($event)"
+                    @dragleave.self="onDragleave($event)" @drop="onDrop($event, index)" @dragover.prevent
+                  >
+                    <span v-html="linkifyText(subTask.text)" />
+                  </label>
+                  <i class="bi-trash mx-2" :title="$t('ui.remove')" @click="removeSubTask(index)" />
+                </div>
+              </div>
+              <input
+                v-show="subTask.editing" :ref="`subTaskEdit${index}`" v-model="subTask.text"
+                class="edit-sub-task" @blur="doneEditSubTask(index)" @keyup.enter="doneEditSubTask(index)"
+              >
+            </li>
+            <div class="new-sub-task d-flex align-items-center">
+              <label for="new-sub-task"><i class="bi-plus-square mx-3" /></label>
+              <input
+                id="new-sub-task" ref="newSubTask" v-model="newSubTask.text" type="text"
+                :placeholder="$t('todoDetails.addSubTask')" autocomplete="off" @blur="addSubTask()" @keyup.enter="addSubTask()"
+              >
+            </div>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1056">
+    <ToastMessage id="copiedTaskToClipboard" :text="$t('todoDetails.copiedTaskToClipboard')" />
+    <ToastMessage
+      id="taskRemoved" :text="$t('todoDetails.taskRemoved')" :sub-text="`(${$t('ui.undo')})`"
+      @sub-text-click="undoRemoveTask"
+    />
+    <ToastMessage id="recurrentTaskRemoved" :text="$t('todoDetails.recurrentTaskRemoved')" />
+    <ToastMessage id="taskDuplicated" :text="$t('todoDetails.taskDuplicated')" />
+  </div>
+
+  <ComfirmModal
+    id="removeReModalToDoDetails" :title="$t('ui.removeRepeatingTask')"
+    :text="$t('ui.repeatingTaskRemoveConfirm')" ico="bi-x-circle" :ok-text="$t('ui.remove')" @on-ok="removeAllComfirmed"
+    @on-cancel="removeAllCanceled"
+  />
+</template>
 
 <style scoped lang="scss">
 @import "/src/assets/style/globalVars.scss";
@@ -651,8 +697,6 @@ export default {
   color: grey;
   margin-left: -8px;
 }
-
-
 
 .dropdown-item {
   color: #3c3c3c;

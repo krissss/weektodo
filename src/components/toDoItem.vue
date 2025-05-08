@@ -1,39 +1,7 @@
-<template>
-  <div class="item-drop-zone" @dragenter.self="onDragenter" @dragleave.self="onDragleave" @drop="onDragleave"
-    :class="[{ 'drag-hover': todoDragHover }]">
-    <div class="todo-item-container" :class="{ 'compact-view': compactView }" ref="itemContainer">
-      <div v-if="!editing" class="inline-todo-item d-flex flex-column" @mouseenter="showToDoItem">
-        <div class="d-flex">
-          <span class="noselect item-text" :class="{ 'checked-todo': toDo.checked, 'compact-view': compactView }"
-            style="flex-grow: 1">
-            <span v-if="toDo.color != 'none'" class="cicle-icon" :style="'color: ' + toDo.color" :class="{
-              'bi-check-circle-fill': toDo.checked,
-              'bi-circle-fill': !toDo.checked,
-            }"></span>
-            <span v-else class="cicle-icon"
-              :class="{ 'bi-check-circle': toDo.checked, 'bi-circle': !toDo.checked, }"></span>
-            <span v-html="todoText"></span>
-            <span v-if="!compactView" class="item-time mx-2" :class="{ 'checked-todo': toDo.checked }"> {{
-                timeFormat(toDo.time)
-            }} <div class="alarm-indicator" :class="{ 'show-alarm-indicator': notificationIndicator && toDo.alarm }">
-              </div></span>
-          </span>
-          <span v-if="compactView" class="item-time" :class="{ 'checked-todo': toDo.checked }"> {{ timeFormat(toDo.time)
-          }}
-            <div class="alarm-indicator" :class="{ 'show-alarm-indicator': notificationIndicator && toDo.alarm }"></div>
-          </span>
-        </div>
-      </div>
-      <input v-show="editing" class="edit todo-input" type="text" v-model="text" ref="toDoEditInput" @blur="doneEdit()"
-        @keyup.enter="doneEdit()" @keyup.esc="cancelEdit()" />
-    </div>
-  </div>
-</template>
-
 <script>
-import toDoListRepository from "../repositories/toDoListRepository";
-import moment from "moment";
-import linkifyStr from 'linkify-string';
+import linkifyStr from 'linkify-string'
+import moment from 'moment'
+import toDoListRepository from '../repositories/toDoListRepository'
 
 export default {
   components: {},
@@ -47,79 +15,121 @@ export default {
       editing: false,
       text: this.toDo.text,
       todoDragHover: false,
-      options: { target: '_blank', defaultProtocol: 'https' }
-    };
+      options: { target: '_blank', defaultProtocol: 'https' },
+    }
+  },
+  computed: {
+    todoText() {
+      return linkifyStr(this.toDo.text, this.options)
+    },
+    compactView() {
+      return this.$store.getters.config.compactView
+    },
+    notificationIndicator() {
+      return this.$store.getters.config.notificationIndicator
+    },
   },
   methods: {
-    editToDo: function () {
-      this.text = this.toDo.text;
-      this.editing = true;
+    editToDo() {
+      this.text = this.toDo.text
+      this.editing = true
       this.$nextTick(function () {
-        this.$refs.toDoEditInput.focus();
-        this.$refs.toDoEditInput.select();
-      });
-      document.getElementById("todo-item-active").style.display = 'none';
+        this.$refs.toDoEditInput.focus()
+        this.$refs.toDoEditInput.select()
+      })
+      document.getElementById('todo-item-active').style.display = 'none'
     },
-    doneEdit: function () {
-      this.editing = false;
-      this.$store.commit("updateTodo", {
+    doneEdit() {
+      this.editing = false
+      this.$store.commit('updateTodo', {
         toDoListId: this.toDoListId,
         index: this.index,
         text: this.text,
-      });
-      toDoListRepository.update(this.toDoListId, this.$store.getters.todoLists[this.toDoListId]);
+      })
+      toDoListRepository.update(this.toDoListId, this.$store.getters.todoLists[this.toDoListId])
     },
-    cancelEdit: function () {
-      this.text = this.toDo.text;
-      this.editing = false;
+    cancelEdit() {
+      this.text = this.toDo.text
+      this.editing = false
     },
-    onDragenter: function () {
-      this.todoDragHover = true;
+    onDragenter() {
+      this.todoDragHover = true
     },
-    onDragleave: function () {
-      this.todoDragHover = false;
+    onDragleave() {
+      this.todoDragHover = false
     },
-    timeFormat: function (date) {
+    timeFormat(date) {
       if (date) {
-        return moment(date, "HH:mm").format("hh:mm a");
+        return moment(date, 'HH:mm').format('hh:mm a')
       }
     },
-    showToDoItem: function () {
-      var activeTodo = {
+    showToDoItem() {
+      const activeTodo = {
         toDo: this.toDo,
         index: this.index,
         toDoListId: this.toDoListId,
         edit: this.editToDo,
-        container: this.$refs.itemContainer
-      };
-      this.$store.commit('setActiveTodo', activeTodo);
+        container: this.$refs.itemContainer,
+      }
+      this.$store.commit('setActiveTodo', activeTodo)
 
-      const activeTodoItem = document.getElementById("todo-item-active");
+      const activeTodoItem = document.getElementById('todo-item-active')
       this.$nextTick(function () {
-        const bounding = this.$refs.itemContainer.getBoundingClientRect();
-        activeTodoItem.style.width = `${bounding.width}px`;
-        activeTodoItem.style.top = `${bounding.y}px`;
-        activeTodoItem.style.left = `${bounding.x}px`;
-        activeTodoItem.style.display = `block`;
-        const margin_bottom = 10;
-        var offset = parseInt(window.innerHeight) - (parseInt(bounding.y) + parseInt(activeTodoItem.offsetHeight)) - margin_bottom;
-        if (offset < 0) activeTodoItem.style.top = `${bounding.y + offset}px`;
-      });
+        const bounding = this.$refs.itemContainer.getBoundingClientRect()
+        activeTodoItem.style.width = `${bounding.width}px`
+        activeTodoItem.style.top = `${bounding.y}px`
+        activeTodoItem.style.left = `${bounding.x}px`
+        activeTodoItem.style.display = `block`
+        const margin_bottom = 10
+        const offset = Number.parseInt(window.innerHeight) - (Number.parseInt(bounding.y) + Number.parseInt(activeTodoItem.offsetHeight)) - margin_bottom
+        if (offset < 0)
+          activeTodoItem.style.top = `${bounding.y + offset}px`
+      })
     },
   },
-  computed: {
-    todoText: function () {
-      return linkifyStr(this.toDo.text, this.options);
-    },
-    compactView: function () {
-      return this.$store.getters.config.compactView;
-    },
-    notificationIndicator: function () {
-      return this.$store.getters.config.notificationIndicator;
-    }
-  }
-};
+}
 </script>
+
+<template>
+  <div
+    class="item-drop-zone" :class="[{ 'drag-hover': todoDragHover }]" @dragenter.self="onDragenter" @dragleave.self="onDragleave"
+    @drop="onDragleave"
+  >
+    <div ref="itemContainer" class="todo-item-container" :class="{ 'compact-view': compactView }">
+      <div v-if="!editing" class="inline-todo-item d-flex flex-column" @mouseenter="showToDoItem">
+        <div class="d-flex">
+          <span
+            class="noselect item-text" :class="{ 'checked-todo': toDo.checked, 'compact-view': compactView }"
+            style="flex-grow: 1"
+          >
+            <span
+              v-if="toDo.color != 'none'" class="cicle-icon" :style="`color: ${toDo.color}`" :class="{
+                'bi-check-circle-fill': toDo.checked,
+                'bi-circle-fill': !toDo.checked,
+              }"
+            />
+            <span
+              v-else class="cicle-icon"
+              :class="{ 'bi-check-circle': toDo.checked, 'bi-circle': !toDo.checked }"
+            />
+            <span v-html="todoText" />
+            <span v-if="!compactView" class="item-time mx-2" :class="{ 'checked-todo': toDo.checked }"> {{
+              timeFormat(toDo.time)
+            }} <div class="alarm-indicator" :class="{ 'show-alarm-indicator': notificationIndicator && toDo.alarm }" /></span>
+          </span>
+          <span v-if="compactView" class="item-time" :class="{ 'checked-todo': toDo.checked }"> {{ timeFormat(toDo.time)
+                                                                                                }}
+            <div class="alarm-indicator" :class="{ 'show-alarm-indicator': notificationIndicator && toDo.alarm }" />
+          </span>
+        </div>
+      </div>
+      <input
+        v-show="editing" ref="toDoEditInput" v-model="text" class="edit todo-input" type="text" @blur="doneEdit()"
+        @keyup.enter="doneEdit()" @keyup.esc="cancelEdit()"
+      >
+    </div>
+  </div>
+</template>
 
 <style scoped lang="scss">
 .todo-item-container {

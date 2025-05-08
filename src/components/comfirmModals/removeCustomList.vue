@@ -1,37 +1,38 @@
-<template>
-  <comfirm-modal :id="'customListRemoveModal'" :title="$t('ui.rmList')" :text="$t('ui.rmListConfirm') +' '+ listId+ '?'"
-    :ico="'bi-x-circle'" :okText="$t('ui.remove')" @on-ok="removeCustomList">
-  </comfirm-modal>
-</template>
-
 <script>
 import { Modal } from 'bootstrap'
-import customToDoListIdsRepository from "../../repositories/customToDoListIdsRepository";
-import toDoListRepository from "../../repositories/toDoListRepository";
-import comfirmModal from "../../components/comfirmModal.vue";
+import comfirmModal from '../../components/comfirmModal.vue'
+import customToDoListIdsRepository from '../../repositories/customToDoListIdsRepository'
+import toDoListRepository from '../../repositories/toDoListRepository'
 
 export default {
-  name: "removeCustomList",
+  name: 'RemoveCustomList',
   components: {
-    comfirmModal
+    ComfirmModal: comfirmModal,
   },
   computed: {
-    listId: function () {
+    listId() {
       if (this.$store.getters.actions.cListToRmv) {
-        return this.$store.getters.actions.cListToRmv.name;
+        return this.$store.getters.actions.cListToRmv.name
       }
-      return null;
-    }
+      return null
+    },
   },
   methods: {
-    removeCustomList: function () {
-      this.$store.commit('removeCustomTodoList', this.$store.getters.actions.cListToRmv);
-      var modalEl = document.getElementById('customListRemoveModal');
-      var modal = Modal.getInstance(modalEl);
-      customToDoListIdsRepository.update(this.$store.getters.cTodoListIds);
-      toDoListRepository.remove(this.$store.getters.actions.cListToRmv.id);
-      modal.hide();
-    }
-  }
+    removeCustomList() {
+      this.$store.commit('removeCustomTodoList', this.$store.getters.actions.cListToRmv)
+      const modalEl = document.getElementById('customListRemoveModal')
+      const modal = Modal.getInstance(modalEl)
+      customToDoListIdsRepository.update(this.$store.getters.cTodoListIds)
+      toDoListRepository.remove(this.$store.getters.actions.cListToRmv.id)
+      modal.hide()
+    },
+  },
 }
 </script>
+
+<template>
+  <ComfirmModal
+    id="customListRemoveModal" :title="$t('ui.rmList')" :text="`${$t('ui.rmListConfirm')} ${listId}?`"
+    ico="bi-x-circle" :ok-text="$t('ui.remove')" @on-ok="removeCustomList"
+  />
+</template>

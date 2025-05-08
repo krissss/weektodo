@@ -1,65 +1,460 @@
+<script>
+import { Modal } from 'bootstrap'
+import moment from 'moment'
+import activeToDo from './components/activeToDo.vue'
+import clearDataModal from './components/comfirmModals/clearDataModal.vue'
+import clearListModal from './components/comfirmModals/clearListModal.vue'
+import removeCustomList from './components/comfirmModals/removeCustomList'
+import sideBar from './components/layout/sideBar'
+import toastMessage from './components/toastMessage'
+import toDoList from './components/toDoList'
+import notifications from './helpers/notifications'
+import taskHelper from './helpers/tasksHelper'
+import migrations from './migrations/migrations'
+import configRepository from './repositories/configRepository'
+import customToDoListIdsRepository from './repositories/customToDoListIdsRepository'
+import repeatingEventRepository from './repositories/repeatingEventRepository'
+import toDoListRepository from './repositories/toDoListRepository'
+import version_json from './repositories/version'
+import aboutModal from './views/aboutModal'
+import configModal from './views/configModal'
+import donateModal from './views/donateModal'
+import importingModal from './views/importingModal.vue'
+import RecurrentEventsModal from './views/RecurrentEventsModal.vue'
+import ReorderCustomListsModal from './views/ReorderCustomListsModal.vue'
+import tipsModal from './views/tipsModal'
+import toDoModal from './views/toDoModal/toDoModal'
+import welcomeModal from './views/welcomeModal'
+
+export default {
+  name: 'App',
+  components: {
+    DonateModal: donateModal,
+    ConfigModal: configModal,
+    ToDoList: toDoList,
+    SideBar: sideBar,
+    RemoveCustomList: removeCustomList,
+    AboutModal: aboutModal,
+    WelcomeModal: welcomeModal,
+    TipsModal: tipsModal,
+    ToDoModal: toDoModal,
+    ClearDataModal: clearDataModal,
+    RecurrentEventsModal,
+    ImportingModal: importingModal,
+    ReorderCustomListsModal,
+    ClearListModal: clearListModal,
+    ToastMessage: toastMessage,
+    ActiveToDo: activeToDo,
+  },
+  data() {
+    return {
+      selected_date: null,
+      cTodoList: this.$store.getters.cTodoListIds,
+      calendarHeight: 'calc(50% - 50px)',
+      ipcRenderer: null,
+      initialLoadCompleted: false,
+      initialListToLoad: 0,
+      initialListLoaded: 0,
+    }
+  },
+  computed: {
+    dates_array() {
+      if (!this.selected_date)
+        return []
+      const dates_array = [moment(this.selected_date).subtract(1, 'd').format('YYYYMMDD'), this.selected_date]
+
+      for (let i = 1; i < this.columns; i++) {
+        dates_array.push(moment(this.selected_date).add(i, 'd').format('YYYYMMDD'))
+      }
+
+      if (this.$store.getters.config.startCalendarYesterday) {
+        dates_array.unshift(moment(this.selected_date).subtract(2, 'd').format('YYYYMMDD'))
+      }
+      else {
+        dates_array.push(moment(this.selected_date).add(this.columns, 'd').format('YYYYMMDD'))
+      }
+
+      this.$store.commit('updateSelectedDates', dates_array)
+      return dates_array
+    },
+    showCustomList() {
+      return this.$store.getters.config.customList
+    },
+    showCalendar() {
+      return this.$store.getters.config.calendar
+    },
+    columns() {
+      return this.$store.getters.config.columns
+    },
+    customColumns() {
+      return this.$store.getters.config.customColumns
+    },
+    zoom() {
+      return this.$store.getters.config.zoom
+    },
+    darkTheme() {
+      return this.$store.getters.config.darkTheme
+    },
+    resizableStyle() {
+      if (this.showCalendar && this.showCustomList) {
+        return { height: this.calendarHeight }
+      }
+      else {
+        return {}
+      }
+    },
+    selectedTodo() {
+      if (this.$store.getters.actions.selectedTodo) {
+        return this.$store.getters.actions.selectedTodo
+      }
+      return null
+    },
+    activeTodo() {
+      if (this.$store.getters.activeTodo) {
+        return this.$store.getters.activeTodo
+      }
+      return null
+    },
+    mainDividerPositionClass() {
+      if (this.$store.getters.config.mainDividerPosition == 0) {
+        return 'on-bottom'
+      }
+      else if (this.$store.getters.config.mainDividerPosition == 1) {
+        return 'on-center'
+      }
+      else {
+        return 'on-top'
+      }
+    },
+    hideTopListContainer() {
+      if (!this.$store.getters.config.customList || !this.$store.getters.config.calendar)
+        return false
+
+      return this.$store.getters.config.mainDividerPosition == 2
+    },
+    hideBottomListContainer() {
+      if (!this.$store.getters.config.customList || !this.$store.getters.config.calendar)
+        return false
+
+      return this.$store.getters.config.mainDividerPosition == 0
+    },
+  },
+  beforeCreate() {
+    const config = configRepository.load()
+    if (version_json.version != config.version) {
+      migrations.migrate()
+    }
+
+    if (Notification.permission !== 'denied') {
+      Notification.requestPermission()
+    }
+    this.$store.commit('loadCustomTodoListsIds', customToDoListIdsRepository.load())
+    this.$store.commit('loadConfig', configRepository.load())
+    this.$i18n.locale = this.$store.getters.config.language
+
+    this.$store.dispatch('loadAllRepeatingEvent').then(
+      () => {
+        const totalDaysCount = Number.parseInt(this.$store.getters.config.columns) + 2
+        const totalCustomListCount = this.$store.getters.cTodoListIds.length
+        this.initialListToLoad = totalDaysCount + totalCustomListCount
+        this.deleteOldRepeatingEvents()
+        this.selected_date = moment().format('YYYYMMDD')
+        this.$nextTick(() => {
+          this.weekResetScroll()
+        })
+        this.$store.commit('loadRepeatingEventDateCache', this.$store.getters.repeatingEventList)
+      },
+    )
+  },
+  mounted() {
+    this.$refs.weekListContainer.scrollLeft = this.todoListWidth()
+    this.calendarHeight = this.$store.getters.config.calendarHeight
+    window.addEventListener('resize', this.weekResetScroll)
+    document.onreadystatechange = () => {
+      if (document.readyState == 'complete') {
+        setTimeout(this.hideSplash, 500)
+      }
+    }
+
+    if (this.$store.getters.config.importing) {
+      this.$store.commit('updateConfig', { val: false, key: 'importing' })
+      configRepository.update(this.$store.getters.config)
+    }
+
+    this.resetAppOnDayChange()
+  },
+  methods: {
+    weekMoveLeft() {
+      this.selected_date = moment(this.selected_date).subtract(1, 'd').format('YYYYMMDD')
+      this.$refs.weekListContainer.scrollLeft = this.todoListWidth() * 2
+      this.$refs.weekListContainer.scroll({
+        left: this.$refs.weekListContainer.scrollLeft - this.todoListWidth(),
+        top: 0,
+        behavior: 'smooth',
+      })
+    },
+    weekMoveRight() {
+      this.selected_date = moment(this.selected_date).add(1, 'd').format('YYYYMMDD')
+      this.$refs.weekListContainer.scrollLeft = 0
+      this.$refs.weekListContainer.scroll({
+        left: this.$refs.weekListContainer.scrollLeft + this.todoListWidth(),
+        top: 0,
+        behavior: 'smooth',
+      })
+    },
+    deleteOldRepeatingEvents() {
+      for (const event of Object.entries(this.$store.getters.repeatingEventList)) {
+        if (moment(event[1].end_date).isBefore(moment())) {
+          repeatingEventRepository.remove(event[0])
+          this.$store.commit('removeRepeatingEvent', event[0])
+        }
+      }
+    },
+    weekResetScroll() {
+      this.$refs.weekListContainer.scrollLeft = this.todoListWidth()
+    },
+    customMoveRight() {
+      this.$refs.customListContainer.scrollLeft
+        = this.$refs.customListContainer.scrollLeft + this.customTodoListWidth() - 13
+    },
+    customMoveLeft() {
+      this.$refs.customListContainer.scrollLeft = this.$refs.customListContainer.scrollLeft - this.customTodoListWidth()
+    },
+    resetCustomList() {
+      this.$nextTick(function () {
+        this.$refs.customListContainer.scrollLeft = 0
+      })
+    },
+    todoListWidth() {
+      return this.$refs.weekListContainer.clientWidth / this.columns
+    },
+    customTodoListWidth() {
+      return this.$refs.customListContainer.clientWidth / this.customColumns
+    },
+    setSelectedDate(date) {
+      this.selected_date = date
+      this.$nextTick(() => {
+        document
+          .getElementById(`list${date}`)
+          .getElementsByClassName('new-todo-input')[0]
+          .focus()
+      })
+    },
+    hideSplash() {
+      if (this.$store.getters.config.firstTimeOpen) {
+        this.showWelcomeModal()
+      }
+    },
+    showWelcomeModal() {
+      const modal = new Modal(document.getElementById('welcomeModal'), {
+        backdrop: 'static',
+      })
+      modal.show()
+      this.$store.commit('updateConfig', { val: false, key: 'firstTimeOpen' })
+      configRepository.update(this.$store.getters.config)
+    },
+    compatible() {
+      return window.IndexedDB
+    },
+    resizerDblClick() {
+      if (this.$store.getters.config.mainDividerPosition != 1)
+        return
+
+      this.calendarHeight = 'calc(50% - 50px)'
+      this.$store.commit('updateConfig', {
+        val: this.calendarHeight,
+        key: 'calendarHeight',
+      })
+      configRepository.update(this.$store.getters.config)
+    },
+    resizerMouseDownHandler(e) {
+      if (this.$store.getters.config.mainDividerPosition != 1)
+        return
+
+      this.resizerY = e.clientY - 50
+      document.addEventListener('mousemove', this.resizerMouseMoveHandler)
+      document.addEventListener('mouseup', this.resizerMouseUpHandler)
+    },
+    resizerMouseMoveHandler(e) {
+      this.calendarHeight = `${((e.clientY - 50) * 100) / this.zoom}px`
+    },
+    resizerMouseUpHandler() {
+      document.removeEventListener('mousemove', this.resizerMouseMoveHandler)
+      document.removeEventListener('mouseup', this.resizerMouseUpHandler)
+      this.$store.commit('updateConfig', {
+        val: this.calendarHeight,
+        key: 'calendarHeight',
+      })
+      configRepository.update(this.$store.getters.config)
+    },
+    refreshTodayNotifications() {
+      notifications.refreshDayNotifications(this, moment().format('YYYYMMDD'))
+    },
+    todoListMounted() {
+      this.methodsAfterInitialLoad()
+    },
+    methodsAfterInitialLoad() {
+      if (!this.initialLoadCompleted) {
+        this.initialListLoaded++
+        if (this.initialListLoaded == this.initialListToLoad) {
+          this.initialLoadCompleted = true
+          if (this.$store.getters.config.moveOldTasks) {
+            this.moveOldTasksToToday().then(() => {
+              this.refreshTodayNotifications()
+              this.$store.commit('updateConfig', { val: moment().format('YYYYMMDD'), key: 'lastDayOpened' })
+              configRepository.update(this.$store.getters.config)
+            })
+          }
+          else {
+            this.refreshTodayNotifications()
+            this.$store.commit('updateConfig', { val: moment().format('YYYYMMDD'), key: 'lastDayOpened' })
+            configRepository.update(this.$store.getters.config)
+          }
+        }
+      }
+    },
+    initialNotificationText() {
+      const yesterdayTasks = this.$store.getters.todoLists[moment().subtract(1, 'd').format('YYYYMMDD')]
+      const todayTasks = this.$store.getters.todoLists[moment().format('YYYYMMDD')]
+
+      const yesterayPendingTasksCount = taskHelper.pendingTasksCount(yesterdayTasks)
+      const todayPendingTasksCount = taskHelper.pendingTasksCount(todayTasks)
+
+      if (yesterayPendingTasksCount == 0 && todayPendingTasksCount == 0) {
+        return this.$t('notifications.noPendingTasksToday')
+      }
+      else if (yesterayPendingTasksCount == 0) {
+        return this.$t('notifications.pendingTasksToday', [todayPendingTasksCount])
+      }
+      else if (todayPendingTasksCount == 0) {
+        return this.$t('notifications.pendingTasksYesterday', [yesterayPendingTasksCount])
+      }
+      else {
+        return this.$t('notifications.pendingTasksYesterdayAndToday', [yesterayPendingTasksCount, todayPendingTasksCount])
+      }
+    },
+    resetAppOnDayChange() {
+      const x = new moment()
+      const y = new moment().add(1, 'd').startOf('date')
+      const duration = moment.duration(y.diff(x)).asMilliseconds()
+
+      setTimeout(
+        () => {
+          this.refreshTodayNotifications()
+          this.resetAppOnDayChange()
+        },
+        duration,
+      )
+    },
+    async moveOldTasksToToday() {
+      const promise = new Promise((resolve) => {
+        const todayListId = moment().format('YYYYMMDD')
+        let daysBefore = moment().diff(moment(this.$store.getters.config.lastDayOpened), 'days')
+        if (daysBefore == 0)
+          daysBefore = 7
+        for (let i = 1; i <= daysBefore; i++) {
+          const listId = moment().subtract(i, 'd').format('YYYYMMDD')
+          this.$store.dispatch('loadTodoLists', listId).then(() => {
+            this.$store.commit('moveUndoneItems', { origenId: listId, destinyId: todayListId })
+            toDoListRepository.update(listId, this.$store.getters.todoLists[listId])
+            if (this.$store.getters.config.autoReorderTasks) {
+              toDoListRepository.update(
+                todayListId,
+                tasksHelper.reorderTasksList(this.$store.getters.todoLists[todayListId]),
+              )
+            }
+            else {
+              toDoListRepository.update(todayListId, this.$store.getters.todoLists[todayListId])
+            }
+            if (i == daysBefore) {
+              resolve('done!')
+            }
+          })
+        }
+      })
+      return promise
+    },
+    setDividerPosition(position) {
+      this.$nextTick(function () {
+        document.getElementById('app-container').classList.add('scrolling')
+        setTimeout(() => {
+          document.getElementById('app-container').classList.remove('scrolling')
+        }, 400)
+        this.$store.commit('updateConfig', { val: position, key: 'mainDividerPosition' })
+        configRepository.update(this.$store.getters.config)
+      })
+    },
+    downloadNewVersion() {
+      window.open('https://weektodo.me', '_blank')
+    },
+    seeChangeLog() {
+      window.open('https://weektodo.me/changelog', '_blank')
+    },
+  },
+}
+</script>
+
 <template>
-  <input class="hidden-input-for-focus" type="text" />
+  <input class="hidden-input-for-focus" type="text">
   <div v-show="compatible" id="app-container" class="app-container" :class="{ 'dark-theme': darkTheme }">
     <div class="hidden-mobile app-body" :style="{ zoom: `${zoom}%` }">
-      <side-bar @change-date="setSelectedDate"></side-bar>
+      <SideBar @change-date="setSelectedDate" />
 
       <div class="h-100 d-flex flex-column">
         <div
           v-show="showCalendar"
+          ref="calendarContainer"
           class="todo-lists-container"
           :style="resizableStyle"
-          ref="calendarContainer"
           :class="{
             'full-screen': !showCustomList,
             'hidden-lists-container': hideTopListContainer,
             'full-screen-divider': hideBottomListContainer,
           }"
         >
-          <i class="bi-chevron-left slider-btn" ref="weekLeft" @click="weekMoveLeft"></i>
-          <div class="todo-slider weekdays" ref="weekListContainer">
-            <to-do-list
+          <i ref="weekLeft" class="bi-chevron-left slider-btn" @click="weekMoveLeft" />
+          <div ref="weekListContainer" class="todo-slider weekdays">
+            <ToDoList
               v-for="date in dates_array"
-              :key="date"
               :id="date"
-              :showCustomList="showCustomList"
+              :key="date"
+              :show-custom-list="showCustomList"
               @todo-list-mounted="todoListMounted"
-            >
-            </to-do-list>
+            />
           </div>
-          <i class="bi-chevron-right slider-btn" ref="weekRight" @click="weekMoveRight"></i>
+          <i ref="weekRight" class="bi-chevron-right slider-btn" @click="weekMoveRight" />
         </div>
 
         <div
           v-show="showCustomList && showCalendar"
-          class="main-horizontal-divider"
           id="resizer"
+          class="main-horizontal-divider"
           :class="mainDividerPositionClass"
           @mousedown="resizerMouseDownHandler"
           @dblclick="resizerDblClick"
         >
-          <div class="inner-main-horizontal-divider"></div>
+          <div class="inner-main-horizontal-divider" />
           <div class="divider-icons-container">
             <i
               class="bi-chevron-up move-to-center-up divider-icons"
-              @click="setDividerPosition(1)"
               :title="$t('ui.restorePanel')"
-            ></i>
+              @click="setDividerPosition(1)"
+            />
             <i
               class="bi-chevron-up move-to-corner-up divider-icons"
-              @click="setDividerPosition(2)"
               :title="$t('ui.maximizeListPanel')"
-            ></i>
+              @click="setDividerPosition(2)"
+            />
             <i
               class="bi-chevron-down move-to-center-down divider-icons"
-              @click="setDividerPosition(1)"
               :title="$t('ui.restorePanel')"
-            ></i>
+              @click="setDividerPosition(1)"
+            />
             <i
               class="bi-chevron-down move-to-corner-down divider-icons"
-              @click="setDividerPosition(0)"
               :title="$t('ui.maximizeCalendarPanel')"
-            ></i>
+              @click="setDividerPosition(0)"
+            />
           </div>
         </div>
 
@@ -74,463 +469,85 @@
         >
           <i
             class="bi-chevron-left slider-btn"
-            @click="customMoveLeft"
             :style="{
               visibility: cTodoList.length > customColumns ? 'visible' : 'hidden',
             }"
-          ></i>
-          <div class="todo-slider slides" ref="customListContainer">
-            <to-do-list
+            @click="customMoveLeft"
+          />
+          <div ref="customListContainer" class="todo-slider slides">
+            <ToDoList
               v-for="(cTodoList, index) in cTodoList"
-              :key="cTodoList.listId"
               :id="cTodoList.listId"
-              :customTodoList="true"
-              :cTodoListIndex="index"
-              :showCustomList="showCustomList"
+              :key="cTodoList.listId"
+              :custom-todo-list="true"
+              :c-todo-list-index="index"
+              :show-custom-list="showCustomList"
               @todo-list-mounted="todoListMounted"
-            ></to-do-list>
+            />
           </div>
           <i
             class="bi-chevron-right slider-btn"
-            @click="customMoveRight"
             :style="{
               visibility: cTodoList.length > customColumns ? 'visible' : 'hidden',
             }"
-          ></i>
+            @click="customMoveRight"
+          />
         </div>
 
         <div v-show="!showCustomList && !showCalendar" style="margin: auto">
-          <img v-if="darkTheme" src="/img/WeekToDoDarkLogo.webp" />
-          <img v-else src="/img/WeekToDoLightLogo.webp" />
+          <img v-if="darkTheme" src="/img/WeekToDoDarkLogo.webp">
+          <img v-else src="/img/WeekToDoLightLogo.webp">
         </div>
       </div>
 
-      <remove-custom-list></remove-custom-list>
-      <config-modal @change-columns="weekResetScroll" :configProp="$store.getters.config"></config-modal>
-      <clear-data-modal></clear-data-modal>
-      <clear-list-modal></clear-list-modal>
-      <about-modal></about-modal>
-      <donate-modal></donate-modal>
-      <welcome-modal></welcome-modal>
-      <tips-modal></tips-modal>
-      <to-do-modal :selectedTodo="selectedTodo"></to-do-modal>
-      <active-to-do :activeTodo="activeTodo"> </active-to-do>
-      <recurrent-events-modal></recurrent-events-modal>
-      <importing-modal :id="'importingModal'" :text="$t('settings.importing')"></importing-modal>
-      <importing-modal :id="'exportingModal'" :text="$t('settings.exporting')"></importing-modal>
+      <RemoveCustomList />
+      <ConfigModal :config-prop="$store.getters.config" @change-columns="weekResetScroll" />
+      <ClearDataModal />
+      <ClearListModal />
+      <AboutModal />
+      <DonateModal />
+      <WelcomeModal />
+      <TipsModal />
+      <ToDoModal :selected-todo="selectedTodo" />
+      <ActiveToDo :active-todo="activeTodo" />
+      <RecurrentEventsModal />
+      <ImportingModal id="importingModal" :text="$t('settings.importing')" />
+      <ImportingModal id="exportingModal" :text="$t('settings.exporting')" />
 
-      <reorder-custom-lists-modal @reset-custom-list="resetCustomList"></reorder-custom-lists-modal>
+      <ReorderCustomListsModal @reset-custom-list="resetCustomList" />
     </div>
     <div class="mobile d-flex flex-column justify-content-center align-items-center">
-      <i class="bi-exclamation-diamond mb-4" style="font-size: 100px"></i>
-      <h3 style="text-align: center">{{ $t("ui.mobileWarning") }}</h3>
+      <i class="bi-exclamation-diamond mb-4" style="font-size: 100px" />
+      <h3 style="text-align: center">
+        {{ $t("ui.mobileWarning") }}
+      </h3>
     </div>
 
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1056">
-      <toast-message
+      <ToastMessage
         id="versionChanges"
         :text="$t('ui.softwareUpdated')"
         :sub-text="$t('ui.seeChanges')"
-        @subTextClick="seeChangeLog"
-      ></toast-message>
+        @sub-text-click="seeChangeLog"
+      />
 
-      <toast-message
+      <ToastMessage
         id="newVersionAvailable"
         :text="$t('ui.newVersionAvailable')"
         :sub-text="$t('ui.download')"
-        @subTextClick="downloadNewVersion"
-      ></toast-message>
+        @sub-text-click="downloadNewVersion"
+      />
 
-      <toast-message id="copiedAddress" :text="$t('donate.copiedAddres')"></toast-message>
+      <ToastMessage id="copiedAddress" :text="$t('donate.copiedAddres')" />
     </div>
   </div>
   <div v-if="!compatible" class="compatible d-flex flex-column justify-content-center align-items-center p-5">
-    <i class="bi-exclamation-diamond mb-4" style="font-size: 100px"></i>
-    <h3 style="text-align: center">{{ $t("ui.compatible") }}</h3>
+    <i class="bi-exclamation-diamond mb-4" style="font-size: 100px" />
+    <h3 style="text-align: center">
+      {{ $t("ui.compatible") }}
+    </h3>
   </div>
 </template>
-
-<script>
-import toDoList from "./components/toDoList";
-import moment from "moment";
-import sideBar from "./components/layout/sideBar";
-import customToDoListIdsRepository from "./repositories/customToDoListIdsRepository";
-import removeCustomList from "./components/comfirmModals/removeCustomList";
-import configModal from "./views/configModal";
-import configRepository from "./repositories/configRepository";
-import aboutModal from "./views/aboutModal";
-import donateModal from "./views/donateModal";
-import welcomeModal from "./views/welcomeModal";
-import toDoModal from "./views/toDoModal/toDoModal";
-import tipsModal from "./views/tipsModal";
-import { Modal, Toast } from "bootstrap";
-import migrations from "./migrations/migrations";
-import version_json from "./repositories/version";
-import taskHelper from "./helpers/tasksHelper";
-import notifications from "./helpers/notifications";
-import clearDataModal from "./components/comfirmModals/clearDataModal.vue";
-import clearListModal from "./components/comfirmModals/clearListModal.vue";
-import importingModal from "./views/importingModal.vue";
-import RecurrentEventsModal from "./views/RecurrentEventsModal.vue";
-import repeatingEventRepository from "./repositories/repeatingEventRepository";
-import toDoListRepository from "./repositories/toDoListRepository";
-import ReorderCustomListsModal from "./views/ReorderCustomListsModal.vue";
-import toastMessage from "./components/toastMessage";
-import activeToDo from "./components/activeToDo.vue";
-import tasksHelper from "./helpers/tasksHelper";
-
-export default {
-  name: "App",
-  components: {
-    donateModal,
-    configModal,
-    toDoList,
-    sideBar,
-    removeCustomList,
-    aboutModal,
-    welcomeModal,
-    tipsModal,
-    toDoModal,
-    clearDataModal,
-    RecurrentEventsModal,
-    importingModal,
-    ReorderCustomListsModal,
-    clearListModal,
-    toastMessage,
-    activeToDo,
-  },
-  data() {
-    return {
-      selected_date: null,
-      cTodoList: this.$store.getters.cTodoListIds,
-      calendarHeight: "calc(50% - 50px)",
-      ipcRenderer: null,
-      initialLoadCompleted: false,
-      initialListToLoad: 0,
-      initialListLoaded: 0,
-    };
-  },
-  beforeCreate() {
-    let config = configRepository.load();
-    if (version_json.version != config.version) {
-      migrations.migrate();
-    }
-
-    if (Notification.permission !== "denied") {
-      Notification.requestPermission();
-    }
-    this.$store.commit("loadCustomTodoListsIds", customToDoListIdsRepository.load());
-    this.$store.commit("loadConfig", configRepository.load());
-    this.$i18n.locale = this.$store.getters.config.language;
-
-    this.$store.dispatch("loadAllRepeatingEvent").then(
-      function () {
-        let totalDaysCount = parseInt(this.$store.getters.config.columns) + 2;
-        let totalCustomListCount = this.$store.getters.cTodoListIds.length;
-        this.initialListToLoad = totalDaysCount + totalCustomListCount;
-        this.deleteOldRepeatingEvents();
-        this.selected_date = moment().format("YYYYMMDD");
-        this.$nextTick(() => {
-          this.weekResetScroll();
-        });
-        this.$store.commit("loadRepeatingEventDateCache", this.$store.getters.repeatingEventList);
-      }.bind(this)
-    );
-  },
-  mounted() {
-    this.$refs.weekListContainer.scrollLeft = this.todoListWidth();
-    this.calendarHeight = this.$store.getters.config.calendarHeight;
-    window.addEventListener("resize", this.weekResetScroll);
-    document.onreadystatechange = () => {
-      if (document.readyState == "complete") {
-        setTimeout(this.hideSplash, 500);
-      }
-    };
-
-    if (this.$store.getters.config.importing) {
-      this.$store.commit("updateConfig", { val: false, key: "importing" });
-      configRepository.update(this.$store.getters.config);
-    }
-
-    this.resetAppOnDayChange();
-  },
-  methods: {
-    weekMoveLeft: function () {
-      this.selected_date = moment(this.selected_date).subtract(1, "d").format("YYYYMMDD");
-      this.$refs.weekListContainer.scrollLeft = this.todoListWidth() * 2;
-      this.$refs.weekListContainer.scroll({
-        left: this.$refs.weekListContainer.scrollLeft - this.todoListWidth(),
-        top: 0,
-        behavior: "smooth",
-      });
-    },
-    weekMoveRight: function () {
-      this.selected_date = moment(this.selected_date).add(1, "d").format("YYYYMMDD");
-      this.$refs.weekListContainer.scrollLeft = 0;
-      this.$refs.weekListContainer.scroll({
-        left: this.$refs.weekListContainer.scrollLeft + this.todoListWidth(),
-        top: 0,
-        behavior: "smooth",
-      });
-    },
-    deleteOldRepeatingEvents: function () {
-      for (const event of Object.entries(this.$store.getters.repeatingEventList)) {
-        if (moment(event[1].end_date).isBefore(moment())) {
-          repeatingEventRepository.remove(event[0]);
-          this.$store.commit("removeRepeatingEvent", event[0]);
-        }
-      }
-    },
-    weekResetScroll: function () {
-      this.$refs.weekListContainer.scrollLeft = this.todoListWidth();
-    },
-    customMoveRight: function () {
-      this.$refs.customListContainer.scrollLeft =
-        this.$refs.customListContainer.scrollLeft + this.customTodoListWidth() - 13;
-    },
-    customMoveLeft: function () {
-      this.$refs.customListContainer.scrollLeft = this.$refs.customListContainer.scrollLeft - this.customTodoListWidth();
-    },
-    resetCustomList: function () {
-      this.$nextTick(function () {
-        this.$refs.customListContainer.scrollLeft = 0;
-      });
-    },
-    todoListWidth: function () {
-      return this.$refs.weekListContainer.clientWidth / this.columns;
-    },
-    customTodoListWidth: function () {
-      return this.$refs.customListContainer.clientWidth / this.customColumns;
-    },
-    setSelectedDate: function (date) {
-      this.selected_date = date;
-      this.$nextTick(function () {
-        document
-          .getElementById("list" + date)
-          .getElementsByClassName("new-todo-input")[0]
-          .focus();
-      });
-    },
-    hideSplash: function () {
-      if (this.$store.getters.config.firstTimeOpen) {
-        this.showWelcomeModal();
-      }
-    },
-    showWelcomeModal: function () {
-      let modal = new Modal(document.getElementById("welcomeModal"), {
-        backdrop: "static",
-      });
-      modal.show();
-      this.$store.commit("updateConfig", { val: false, key: "firstTimeOpen" });
-      configRepository.update(this.$store.getters.config);
-    },
-    compatible: function () {
-      return window.IndexedDB;
-    },
-    resizerDblClick: function () {
-      if (this.$store.getters.config.mainDividerPosition != 1) return;
-
-      this.calendarHeight = "calc(50% - 50px)";
-      this.$store.commit("updateConfig", {
-        val: this.calendarHeight,
-        key: "calendarHeight",
-      });
-      configRepository.update(this.$store.getters.config);
-    },
-    resizerMouseDownHandler: function (e) {
-      if (this.$store.getters.config.mainDividerPosition != 1) return;
-
-      this.resizerY = e.clientY - 50;
-      document.addEventListener("mousemove", this.resizerMouseMoveHandler);
-      document.addEventListener("mouseup", this.resizerMouseUpHandler);
-    },
-    resizerMouseMoveHandler: function (e) {
-      this.calendarHeight = `${((e.clientY - 50) * 100) / this.zoom}px`;
-    },
-    resizerMouseUpHandler: function () {
-      document.removeEventListener("mousemove", this.resizerMouseMoveHandler);
-      document.removeEventListener("mouseup", this.resizerMouseUpHandler);
-      this.$store.commit("updateConfig", {
-        val: this.calendarHeight,
-        key: "calendarHeight",
-      });
-      configRepository.update(this.$store.getters.config);
-    },
-    refreshTodayNotifications: function () {
-      notifications.refreshDayNotifications(this, moment().format("YYYYMMDD"));
-    },
-    todoListMounted: function () {
-      this.methodsAfterInitialLoad();
-    },
-    methodsAfterInitialLoad: function () {
-      if (!this.initialLoadCompleted) {
-        this.initialListLoaded++;
-        if (this.initialListLoaded == this.initialListToLoad) {
-          this.initialLoadCompleted = true;
-          if (this.$store.getters.config.moveOldTasks) {
-            this.moveOldTasksToToday().then(() => {
-              this.refreshTodayNotifications();
-              this.$store.commit("updateConfig", { val: moment().format("YYYYMMDD"), key: "lastDayOpened" });
-              configRepository.update(this.$store.getters.config);
-            });
-          } else {
-            this.refreshTodayNotifications();
-            this.$store.commit("updateConfig", { val: moment().format("YYYYMMDD"), key: "lastDayOpened" });
-            configRepository.update(this.$store.getters.config);
-          }
-        }
-      }
-    },
-    initialNotificationText: function () {
-      let yesterdayTasks = this.$store.getters.todoLists[moment().subtract(1, "d").format("YYYYMMDD")];
-      let todayTasks = this.$store.getters.todoLists[moment().format("YYYYMMDD")];
-
-      let yesterayPendingTasksCount = taskHelper.pendingTasksCount(yesterdayTasks);
-      let todayPendingTasksCount = taskHelper.pendingTasksCount(todayTasks);
-
-      if (yesterayPendingTasksCount == 0 && todayPendingTasksCount == 0) {
-        return this.$t("notifications.noPendingTasksToday");
-      } else if (yesterayPendingTasksCount == 0) {
-        return this.$t("notifications.pendingTasksToday", [todayPendingTasksCount]);
-      } else if (todayPendingTasksCount == 0) {
-        return this.$t("notifications.pendingTasksYesterday", [yesterayPendingTasksCount]);
-      } else {
-        return this.$t("notifications.pendingTasksYesterdayAndToday", [yesterayPendingTasksCount, todayPendingTasksCount]);
-      }
-    },
-    resetAppOnDayChange: function () {
-      var x = new moment();
-      var y = new moment().add(1, "d").startOf("date");
-      var duration = moment.duration(y.diff(x)).asMilliseconds();
-
-      setTimeout(
-        function () {
-          this.refreshTodayNotifications();
-          this.resetAppOnDayChange();
-        }.bind(this),
-        duration
-      );
-    },
-    moveOldTasksToToday: async function () {
-      var promise = new Promise((resolve) => {
-        var todayListId = moment().format("YYYYMMDD");
-        let daysBefore = moment().diff(moment(this.$store.getters.config.lastDayOpened), "days");
-        if (daysBefore == 0) daysBefore = 7;
-        for (let i = 1; i <= daysBefore; i++) {
-          let listId = moment().subtract(i, "d").format("YYYYMMDD");
-          this.$store.dispatch("loadTodoLists", listId).then(() => {
-            this.$store.commit("moveUndoneItems", { origenId: listId, destinyId: todayListId });
-            toDoListRepository.update(listId, this.$store.getters.todoLists[listId]);
-            if (this.$store.getters.config.autoReorderTasks) {
-              toDoListRepository.update(
-                todayListId,
-                tasksHelper.reorderTasksList(this.$store.getters.todoLists[todayListId])
-              );
-            } else {
-              toDoListRepository.update(todayListId, this.$store.getters.todoLists[todayListId]);
-            }
-            if (i == daysBefore) {
-              resolve("done!");
-            }
-          });
-        }
-      });
-      return promise;
-    },
-    setDividerPosition: function (position) {
-      this.$nextTick(function () {
-        document.getElementById("app-container").classList.add("scrolling");
-        setTimeout(() => {
-          document.getElementById("app-container").classList.remove("scrolling");
-        }, 400);
-        this.$store.commit("updateConfig", { val: position, key: "mainDividerPosition" });
-        configRepository.update(this.$store.getters.config);
-      });
-    },
-    downloadNewVersion: function () {
-      window.open("https://weektodo.me", "_blank");
-    },
-    seeChangeLog: function () {
-      window.open("https://weektodo.me/changelog", "_blank");
-    },
-  },
-  computed: {
-    dates_array: function () {
-      if (!this.selected_date) return [];
-      var dates_array = [moment(this.selected_date).subtract(1, "d").format("YYYYMMDD"), this.selected_date];
-
-      for (let i = 1; i < this.columns; i++) {
-        dates_array.push(moment(this.selected_date).add(i, "d").format("YYYYMMDD"));
-      }
-
-      if (this.$store.getters.config.startCalendarYesterday) {
-        dates_array.unshift(moment(this.selected_date).subtract(2, "d").format("YYYYMMDD"));
-      } else {
-        dates_array.push(moment(this.selected_date).add(this.columns, "d").format("YYYYMMDD"));
-      }
-
-      this.$store.commit("updateSelectedDates", dates_array);
-      return dates_array;
-    },
-    showCustomList: function () {
-      return this.$store.getters.config.customList;
-    },
-    showCalendar: function () {
-      return this.$store.getters.config.calendar;
-    },
-    columns: function () {
-      return this.$store.getters.config.columns;
-    },
-    customColumns: function () {
-      return this.$store.getters.config.customColumns;
-    },
-    zoom: function () {
-      return this.$store.getters.config.zoom;
-    },
-    darkTheme: function () {
-      return this.$store.getters.config.darkTheme;
-    },
-    resizableStyle: function () {
-      if (this.showCalendar && this.showCustomList) {
-        return { height: this.calendarHeight };
-      } else {
-        return {};
-      }
-    },
-    selectedTodo: function () {
-      if (this.$store.getters.actions.selectedTodo) {
-        return this.$store.getters.actions.selectedTodo;
-      }
-      return null;
-    },
-    activeTodo: function () {
-      if (this.$store.getters.activeTodo) {
-        return this.$store.getters.activeTodo;
-      }
-      return null;
-    },
-    mainDividerPositionClass: function () {
-      if (this.$store.getters.config.mainDividerPosition == 0) {
-        return "on-bottom";
-      } else if (this.$store.getters.config.mainDividerPosition == 1) {
-        return "on-center";
-      } else {
-        return "on-top";
-      }
-    },
-    hideTopListContainer: function () {
-      if (!this.$store.getters.config.customList || !this.$store.getters.config.calendar) return false;
-
-      return this.$store.getters.config.mainDividerPosition == 2 ? true : false;
-    },
-    hideBottomListContainer: function () {
-      if (!this.$store.getters.config.customList || !this.$store.getters.config.calendar) return false;
-
-      return this.$store.getters.config.mainDividerPosition == 0 ? true : false;
-    },
-  },
-};
-</script>
 
 <style lang="scss">
 @import "/src/assets/style/globalVars.scss";

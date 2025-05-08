@@ -1,76 +1,10 @@
-<template>
-  <div class="weekly-to-do-header d-flex">
-    <i v-show="!editing" class="bi-info header-menu-icons align-self-center dropdown-toggle-split "
-      style="visibility: hidden"></i>
-    <div style="flex-grow: 1" class="noselect">
-      <div v-if="!customTodoList">
-        <h4 :class="{ 'today-date': is_today }">
-          {{ moments(id).locale(language).format("dddd") }}
-        </h4>
-        <span class="weekly-to-do-subheader">
-          {{ moments(id).locale(language).format("LL") }}
-        </span>
-      </div>
-      <div v-else>
-        <h4 v-show="!editing" @dblclick="editToDoListName"> {{ todo_list_name }} </h4>
-        <input class="custom-todo-input" v-show="editing" type="text" v-model="name" ref="cTodoInput" @blur="doneEdit()"
-          @keyup.enter="doneEdit()" @keyup.esc="cancelEdit()" />
-      </div>
-    </div>
-    <i v-show="!editing" class="bi-three-dots-vertical header-menu-icons dropdown-toggle-split align-self-center"
-      type="button" data-bs-toggle="dropdown"></i>
-    <ul class="dropdown-menu" aria-labelledby="btnTaskOptionMenu">
-      <li>
-        <button class="dropdown-item" type="button" @click="newTask">
-          <i class="bi-plus-lg"></i> <span>{{ $t('ui.newTask') }}</span>
-        </button>
-      </li>
-      <li v-show="!allTodoChecked()">
-        <button class="dropdown-item" type="button" @click="check_all_items">
-          <i class="bi-check2-all"></i> <span>{{ $t('ui.completeAll') }}</span>
-        </button>
-      </li>
-      <li>
-        <button class="dropdown-item" type="button" @click="sortItems">
-          <i class="bi-sort-down"></i> <span>{{ $t('ui.reorder') }}</span>
-        </button>
-      </li>
-      <li v-show="!customTodoList && !allTodoChecked()">
-        <button class="dropdown-item" type="button" @click="moveUndoneItems">
-          <i class="bi-reply-all"></i> <span>{{ $t('ui.postpone') }}</span>
-        </button>
-      </li>
-      <li>
-        <button class="dropdown-item" type="button" @click="copyListTasksToClipboard">
-          <i class="bi-clipboard"></i> <span>{{ $t('ui.copyTasks') }}</span>
-        </button>
-      </li>
-      <li>
-        <hr class="dropdown-divider" />
-      </li>
-      <li>
-        <button class="dropdown-item" type="button" @click="clearList" data-bs-toggle="modal"
-          data-bs-target="#clearListModal">
-          <i class="bi-trash"></i> <span>{{ $t('ui.clearList') }}</span>
-        </button>
-      </li>
-      <li v-show="customTodoList">
-        <button class="dropdown-item" type="button" data-bs-dismiss="modal" @click="removeList" data-bs-toggle="modal"
-          data-bs-target="#customListRemoveModal">
-          <i class="bi-x-circle"></i> <span>{{ $t('ui.removeList') }}</span>
-        </button>
-      </li>
-    </ul>
-  </div>
-</template>
-
 <script>
-import moment from "moment";
-import toDoListRepository from "../repositories/toDoListRepository";
-import customToDoListIdsRepository from "../repositories/customToDoListIdsRepository";
-import notifications from "../helpers/notifications";
-import tasksHelper from "../helpers/tasksHelper";
-import { Toast } from 'bootstrap';
+import { Toast } from 'bootstrap'
+import moment from 'moment'
+import notifications from '../helpers/notifications'
+import tasksHelper from '../helpers/tasksHelper'
+import customToDoListIdsRepository from '../repositories/customToDoListIdsRepository'
+import toDoListRepository from '../repositories/toDoListRepository'
 
 export default {
   components: {},
@@ -83,124 +17,203 @@ export default {
   data() {
     return {
       editing: false,
-      name: "",
-    };
+      name: '',
+    }
+  },
+  computed: {
+    is_today() {
+      return moment().format('YYYYMMDD') == this.id
+    },
+    todo_list_name() {
+      return this.$store.getters.cTodoListIds[this.cTodoListIndex].listName
+    },
+    language() {
+      return this.$store.getters.config.language
+    },
   },
   mounted() {
     if (this.customTodoList) {
       if (this.$store.getters.actions.cListCreated) {
-        this.$store.commit("actionsCListCreatedUpdate", false);
-        this.editing = true;
+        this.$store.commit('actionsCListCreatedUpdate', false)
+        this.editing = true
         this.$nextTick(function () {
-          this.$refs.cTodoInput.focus();
-          this.$refs.cTodoInput.select();
-        });
+          this.$refs.cTodoInput.focus()
+          this.$refs.cTodoInput.select()
+        })
       }
     }
   },
   methods: {
-    check_all_items: function () {
-      this.$store.commit("checkAllItems", this.id);
-      this.updateTodoList(this.id, this.$store.getters.todoLists[this.id]);
+    check_all_items() {
+      this.$store.commit('checkAllItems', this.id)
+      this.updateTodoList(this.id, this.$store.getters.todoLists[this.id])
     },
-    moveUndoneItems: function () {
-      let towmorrow_id = this.moments(this.id).add(1, "d").format("YYYYMMDD");
-      this.$store.commit("moveUndoneItems", {
+    moveUndoneItems() {
+      const towmorrow_id = this.moments(this.id).add(1, 'd').format('YYYYMMDD')
+      this.$store.commit('moveUndoneItems', {
         origenId: this.id,
         destinyId: towmorrow_id,
-      });
-      this.updateTodoList(this.id, this.$store.getters.todoLists[this.id]);
+      })
+      this.updateTodoList(this.id, this.$store.getters.todoLists[this.id])
 
       if (this.$store.getters.config.autoReorderTasks) {
-        this.updateTodoList(towmorrow_id, tasksHelper.reorderTasksList(this.$store.getters.todoLists[towmorrow_id]));
-      } else {
-        this.updateTodoList(towmorrow_id, this.$store.getters.todoLists[towmorrow_id]);
+        this.updateTodoList(towmorrow_id, tasksHelper.reorderTasksList(this.$store.getters.todoLists[towmorrow_id]))
       }
-
+      else {
+        this.updateTodoList(towmorrow_id, this.$store.getters.todoLists[towmorrow_id])
+      }
     },
-    moments: function (date) {
-      return moment(date);
+    moments(date) {
+      return moment(date)
     },
-    updateTodoList: function (todoListId, TodoList) {
-      notifications.refreshDayNotifications(this, todoListId);
-      toDoListRepository.update(todoListId, TodoList);
+    updateTodoList(todoListId, TodoList) {
+      notifications.refreshDayNotifications(this, todoListId)
+      toDoListRepository.update(todoListId, TodoList)
     },
-    allTodoChecked: function () {
-      let allChecked = true;
-      this.toDoList.forEach(function (todo) {
+    allTodoChecked() {
+      let allChecked = true
+      this.toDoList.forEach((todo) => {
         if (!todo.checked) {
-          allChecked = false;
-          return;
+          allChecked = false
         }
-      });
-      return allChecked;
+      })
+      return allChecked
     },
-    editToDoListName: function () {
-      this.name = this.$store.getters.cTodoListIds[this.cTodoListIndex].listName;
-      this.editing = true;
+    editToDoListName() {
+      this.name = this.$store.getters.cTodoListIds[this.cTodoListIndex].listName
+      this.editing = true
       this.$nextTick(function () {
-        this.$refs.cTodoInput.focus();
-        this.$refs.cTodoInput.select();
-      });
+        this.$refs.cTodoInput.focus()
+        this.$refs.cTodoInput.select()
+      })
     },
-    doneEdit: function () {
-      this.editing = false;
-      this.$store.commit("updateCustomTodoList", {
-        index: this.cTodoListIndex, name: this.name,
-      });
-      customToDoListIdsRepository.update(this.$store.getters.cTodoListIds);
+    doneEdit() {
+      this.editing = false
+      this.$store.commit('updateCustomTodoList', {
+        index: this.cTodoListIndex,
+        name: this.name,
+      })
+      customToDoListIdsRepository.update(this.$store.getters.cTodoListIds)
     },
-    cancelEdit: function () {
-      this.name = this.$store.getters.cTodoListIds[this.cTodoListIndex].listName || "";
-      this.editing = false;
+    cancelEdit() {
+      this.name = this.$store.getters.cTodoListIds[this.cTodoListIndex].listName || ''
+      this.editing = false
     },
-    removeList: function () {
-      this.$store.commit("actionsCListToRmvUpdate", {
+    removeList() {
+      this.$store.commit('actionsCListToRmvUpdate', {
         id: this.id,
         index: this.cTodoListIndex,
         name: this.$store.getters.cTodoListIds[this.cTodoListIndex].listName,
-      });
+      })
     },
-    sortItems: function () {
-      toDoListRepository.update(this.id, tasksHelper.reorderTasksList(this.toDoList));
+    sortItems() {
+      toDoListRepository.update(this.id, tasksHelper.reorderTasksList(this.toDoList))
     },
-    clearList: function () {
-      this.$store.commit("setListToClear", this.id);
+    clearList() {
+      this.$store.commit('setListToClear', this.id)
     },
-    copyListTasksToClipboard: async function () {
-      await navigator.clipboard.writeText(this.todoListToString());
-      let toast = new Toast(document.getElementById("copiedTaskToClipboard"));
-      toast.show();
+    async copyListTasksToClipboard() {
+      await navigator.clipboard.writeText(this.todoListToString())
+      const toast = new Toast(document.getElementById('copiedTaskToClipboard'))
+      toast.show()
     },
-    todoListToString: function () {
+    todoListToString() {
       return this.toDoList.map((x) => {
-        let task = `- ${x.text}`;
-        if (x.time) task += ` [${x.time}]`;
-        return task;
+        let task = `- ${x.text}`
+        if (x.time)
+          task += ` [${x.time}]`
+        return task
       }).join('\n')
     },
-    newTask: function () {
+    newTask() {
       this.$nextTick(function () {
         document
-          .getElementById("list" + this.id)
-          .getElementsByClassName("new-todo-input")[0]
-          .focus();
-      });
-    }
-  },
-  computed: {
-    is_today: function () {
-      return moment().format("YYYYMMDD") == this.id;
-    },
-    todo_list_name: function () {
-      return this.$store.getters.cTodoListIds[this.cTodoListIndex].listName;
-    },
-    language: function () {
-      return this.$store.getters.config.language;
+          .getElementById(`list${this.id}`)
+          .getElementsByClassName('new-todo-input')[0]
+          .focus()
+      })
     },
   },
-};
+}
 </script>
+
+<template>
+  <div class="weekly-to-do-header d-flex">
+    <i
+      v-show="!editing" class="bi-info header-menu-icons align-self-center dropdown-toggle-split "
+      style="visibility: hidden"
+    />
+    <div style="flex-grow: 1" class="noselect">
+      <div v-if="!customTodoList">
+        <h4 :class="{ 'today-date': is_today }">
+          {{ moments(id).locale(language).format("dddd") }}
+        </h4>
+        <span class="weekly-to-do-subheader">
+          {{ moments(id).locale(language).format("LL") }}
+        </span>
+      </div>
+      <div v-else>
+        <h4 v-show="!editing" @dblclick="editToDoListName">
+          {{ todo_list_name }}
+        </h4>
+        <input
+          v-show="editing" ref="cTodoInput" v-model="name" class="custom-todo-input" type="text" @blur="doneEdit()"
+          @keyup.enter="doneEdit()" @keyup.esc="cancelEdit()"
+        >
+      </div>
+    </div>
+    <i
+      v-show="!editing" class="bi-three-dots-vertical header-menu-icons dropdown-toggle-split align-self-center"
+      type="button" data-bs-toggle="dropdown"
+    />
+    <ul class="dropdown-menu" aria-labelledby="btnTaskOptionMenu">
+      <li>
+        <button class="dropdown-item" type="button" @click="newTask">
+          <i class="bi-plus-lg" /> <span>{{ $t('ui.newTask') }}</span>
+        </button>
+      </li>
+      <li v-show="!allTodoChecked()">
+        <button class="dropdown-item" type="button" @click="check_all_items">
+          <i class="bi-check2-all" /> <span>{{ $t('ui.completeAll') }}</span>
+        </button>
+      </li>
+      <li>
+        <button class="dropdown-item" type="button" @click="sortItems">
+          <i class="bi-sort-down" /> <span>{{ $t('ui.reorder') }}</span>
+        </button>
+      </li>
+      <li v-show="!customTodoList && !allTodoChecked()">
+        <button class="dropdown-item" type="button" @click="moveUndoneItems">
+          <i class="bi-reply-all" /> <span>{{ $t('ui.postpone') }}</span>
+        </button>
+      </li>
+      <li>
+        <button class="dropdown-item" type="button" @click="copyListTasksToClipboard">
+          <i class="bi-clipboard" /> <span>{{ $t('ui.copyTasks') }}</span>
+        </button>
+      </li>
+      <li>
+        <hr class="dropdown-divider">
+      </li>
+      <li>
+        <button
+          class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#clearListModal"
+          @click="clearList"
+        >
+          <i class="bi-trash" /> <span>{{ $t('ui.clearList') }}</span>
+        </button>
+      </li>
+      <li v-show="customTodoList">
+        <button
+          class="dropdown-item" type="button" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#customListRemoveModal"
+          @click="removeList"
+        >
+          <i class="bi-x-circle" /> <span>{{ $t('ui.removeList') }}</span>
+        </button>
+      </li>
+    </ul>
+  </div>
+</template>
 
 <style scoped lang="scss">
 .weekly-to-do-header {

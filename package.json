@@ -6,6 +6,7 @@
   "description": "Free and Open Source Minimalist Weekly Planner focused on privacy.",
   "author": "Manuel Ernesto Garcia <contact@weektodo.me> (https://weektodo.me/)",
   "homepage": "https://weektodo.me",
+  "repository": "https://github.com/manuelernestog/weektodo",
   "keywords": [
     "ToDo",
     "Weekly Planner",
@@ -16,9 +17,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix"
   },
-  "repository": "https://github.com/manuelernestog/weektodo",
   "dependencies": {
     "@manuelernestog/click-handler": "^1.4.1",
     "@popperjs/core": "^2.11.8",
@@ -35,8 +37,10 @@
     "vuex": "^4.1.0"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^4.13.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/compiler-sfc": "^3.5.13",
+    "eslint": "^9.26.0",
     "sass": "^1.87.0",
     "sass-loader": "^10.5.2",
     "vite": "^6.3.5"

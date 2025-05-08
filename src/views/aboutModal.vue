@@ -1,10 +1,25 @@
+<script>
+import version_json from '../repositories/version.js'
+
+export default {
+  name: 'AboutModal',
+  data() {
+    return {
+      version: version_json.version,
+    }
+  },
+}
+</script>
+
 <template>
-  <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div id="aboutModal" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ $t("about.about") }}</h5>
-          <i class="bi-x close-modal" data-bs-dismiss="modal"></i>
+          <h5 class="modal-title">
+            {{ $t("about.about") }}
+          </h5>
+          <i class="bi-x close-modal" data-bs-dismiss="modal" />
         </div>
         <div class="modal-body">
           <div class="d-flex flex-column" style="text-align: center; margin-top: 10px">
@@ -14,17 +29,16 @@
               alt="WeekToDo"
               title="WeekToDo Logo"
               width="256"
-            />
+            >
             <img
               class="logo logo-white align-self-center"
               src="/img/weektodo-isologo-white.svg"
               alt="WeekToDo"
               title="WeekToDo Logo"
               width="256"
-            />
+            >
             <!-- <h5 style="margin-top: 15px; margin-bottom: 2px;">WeekToDo</h5> -->
-            <span class="mt-3" style="font-size: 0.75rem"
-              >{{ $t("about.version") }} {{ version }} •
+            <span class="mt-3" style="font-size: 0.75rem">{{ $t("about.version") }} {{ version }} •
               <a
                 href="https://weektodo.me/changelog"
                 target="_blank"
@@ -39,15 +53,14 @@
               </div>
             </span>
             <div class="d-flex align-self-center">
-              <a href="https://weektodo.me/blog/1" target="_blank" title="Blog"> <i class="bi-rss mx-2"></i></a>
+              <a href="https://weektodo.me/blog/1" target="_blank" title="Blog"> <i class="bi-rss mx-2" /></a>
               <!-- <a href="https://twitter.com/weektodo" target="_blank" title="Twitter"> <i class="bi-twitter mx-2"></i></a> -->
               <a href="https://github.com/manuelernestog/weektodo" target="_blank" title="Github">
-                <i class="bi-github mx-2"></i
-              ></a>
-              <a href="mailto:contact@weektodo.me"> <i class="bi-envelope mx-2" :title="$t('about.email')"></i></a>
+                <i class="bi-github mx-2" /></a>
+              <a href="mailto:contact@weektodo.me"> <i class="bi-envelope mx-2" :title="$t('about.email')" /></a>
             </div>
           </div>
-          <div class="horizontal-divider mt-3 mb-3"></div>
+          <div class="horizontal-divider mt-3 mb-3" />
           <div>
             <div style="margin-top: 10px">
               <div class="row">
@@ -59,7 +72,7 @@
                       alt="Manuel Ernesto Garcia"
                       title="Manuel Ernesto Garcia"
                       width="64"
-                    />
+                    >
                   </div>
                   <div class="col-md-9 pt-3">
                     <h6 class="mb-1">{{ $t("about.devName") }}</h6>
@@ -67,7 +80,7 @@
                   </div>
                 </a>
               </div>
-              <div class="horizontal-divider mt-3 mb-2"></div>
+              <div class="horizontal-divider mt-3 mb-2" />
               <div
                 class="text-center text-uppercase px-2 d-flex justify-content-center flex-wrap"
                 style="font-size: 0.8rem; opacity: 0.8; line-height: 20px"
@@ -82,13 +95,10 @@
                   {{ $t("about.license") }}
                 </a>
               </div>
-              <div class="horizontal-divider mt-2 mb-3"></div>
+              <div class="horizontal-divider mt-2 mb-3" />
               <div class="d-flex">
-                <span style="margin-top: 10px; margin-right: 10px"
-                  >{{ $t("about.madeWith") }} <i class="bi-heart-fill" style="color: red"></i> {{ $t("about.inCuba") }}</span
-                >
-                <a class="btn flex-fill" href="https://weektodo.me/support-us" target="_blank"
-                  >{{ $t("donate.supportUs") }}
+                <span style="margin-top: 10px; margin-right: 10px">{{ $t("about.madeWith") }} <i class="bi-heart-fill" style="color: red" /> {{ $t("about.inCuba") }}</span>
+                <a class="btn flex-fill" href="https://weektodo.me/support-us" target="_blank">{{ $t("donate.supportUs") }}
                 </a>
               </div>
             </div>
@@ -98,22 +108,9 @@
     </div>
   </div>
 
-  <sponsor-modal ref="sponsorsModal"></sponsor-modal>
-  <collaborators-modal ref="collaboratorsModal"></collaborators-modal>
+  <sponsor-modal ref="sponsorsModal" />
+  <collaborators-modal ref="collaboratorsModal" />
 </template>
-
-<script>
-import version_json from "../repositories/version.js";
-
-export default {
-  name: "aboutModal",
-  data() {
-    return {
-      version: version_json.version,
-    };
-  },
-};
-</script>
 
 <style scoped>
 .modal-dialog {

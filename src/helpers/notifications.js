@@ -1,79 +1,81 @@
-import moment from "moment";
+import moment from 'moment'
 
 export default {
   refreshDayNotifications(vue, todoListId) {
-    let todoList = vue.$store.getters.todoLists[todoListId];
-    var notificationSound = vue.$store.getters.config.notificationSound;
-    if (todoListId != moment().format("YYYYMMDD")) return;
+    const todoList = vue.$store.getters.todoLists[todoListId]
+    const notificationSound = vue.$store.getters.config.notificationSound
+    if (todoListId != moment().format('YYYYMMDD'))
+      return
 
     vue.$store.getters.notifications.forEach((notification) => {
-      clearTimeout(notification);
-    });
-    var notificationsList = [];
+      clearTimeout(notification)
+    })
+    const notificationsList = []
 
-    if (todoList != null)
+    if (todoList != null) {
       todoList.forEach((todo) => {
-        if (todo.alarm && !todo.checked && moment(todo.time, "HH:mm") >= moment()) {
-          notificationsList.push(this.createNotificationAlert(todo.time, todo.text, notificationSound));
+        if (todo.alarm && !todo.checked && moment(todo.time, 'HH:mm') >= moment()) {
+          notificationsList.push(this.createNotificationAlert(todo.time, todo.text, notificationSound))
         }
-      });
+      })
+    }
 
-    vue.$store.commit("setNotificatios", notificationsList);
+    vue.$store.commit('setNotificatios', notificationsList)
   },
   createNotificationAlert(todoTime, todoText, notificationSound) {
-    var x = new moment();
-    var y = new moment(todoTime, "HH:mm");
-    var duration = moment.duration(y.diff(x)).asMilliseconds();
+    const x = new moment()
+    const y = new moment(todoTime, 'HH:mm')
+    const duration = moment.duration(y.diff(x)).asMilliseconds()
 
-    var alertTimeOut = setTimeout(
-      function () {
-        this.createNotification(moment(todoTime, "HH:mm").format("LT"), todoText, notificationSound);
-      }.bind(this),
-      duration
-    );
+    const alertTimeOut = setTimeout(
+      () => {
+        this.createNotification(moment(todoTime, 'HH:mm').format('LT'), todoText, notificationSound)
+      },
+      duration,
+    )
 
-    return alertTimeOut;
+    return alertTimeOut
   },
   createNotification(header, body, notificationSound) {
     new Notification(header, {
-      body: body,
-      icon: "/favicon.ico",
+      body,
+      icon: '/favicon.ico',
       silent: true,
-    });
-    this.playNotificationSound(notificationSound);
+    })
+    this.playNotificationSound(notificationSound)
   },
   playNotificationSound(notificationSound) {
-    var sound;
+    let sound
     switch (notificationSound) {
-      case "pop":
-        sound = new Audio("sounds/pop-alert.ogg");
-        break;
-      case "positive":
-        sound = new Audio("sounds/positive.ogg");
-        break;
-      case "bell":
-        sound = new Audio("sounds/loud-bell.ogg");
-        break;
-      case "soft":
-        sound = new Audio("sounds/soft.ogg");
-        break;
-      case "tiny":
-        sound = new Audio("sounds/tiny.ogg");
-        break;
-      case "piano":
-        sound = new Audio("sounds/piano.ogg");
-        break;
-      case "soft-bell":
-        sound = new Audio("sounds/soft-bell.ogg");
-        break;
-      case "metal":
-        sound = new Audio("sounds/metal-gear.ogg");
-        break;
-      case "none":
-        return;
+      case 'pop':
+        sound = new Audio('sounds/pop-alert.ogg')
+        break
+      case 'positive':
+        sound = new Audio('sounds/positive.ogg')
+        break
+      case 'bell':
+        sound = new Audio('sounds/loud-bell.ogg')
+        break
+      case 'soft':
+        sound = new Audio('sounds/soft.ogg')
+        break
+      case 'tiny':
+        sound = new Audio('sounds/tiny.ogg')
+        break
+      case 'piano':
+        sound = new Audio('sounds/piano.ogg')
+        break
+      case 'soft-bell':
+        sound = new Audio('sounds/soft-bell.ogg')
+        break
+      case 'metal':
+        sound = new Audio('sounds/metal-gear.ogg')
+        break
+      case 'none':
+        return
     }
-    sound.addEventListener("canplaythrough", () => {
-      sound.play();
-    });
+    sound.addEventListener('canplaythrough', () => {
+      sound.play()
+    })
   },
-};
+}

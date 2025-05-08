@@ -1,3 +1,32 @@
+<script>
+export default {
+  name: 'TimePicker',
+  props: {
+    time: { required: true, type: [String, null] },
+  },
+  emits: ['timeSelected'],
+  data() {
+    return {
+      selectedTime: '',
+    }
+  },
+  watch: {
+    time(newVal) {
+      this.selectedTime = newVal
+    },
+  },
+  methods: {
+    selectTime(time) {
+      this.$emit('timeSelected', time)
+    },
+    clearTime() {
+      this.selectedTime = null
+      this.selectTime(this.selectedTime)
+    },
+  },
+}
+</script>
+
 <template>
   <div
     class="header-menu-icons"
@@ -9,7 +38,7 @@
     <i
       id="btnTaskTimePicker"
       :class="{ 'bi-alarm': !selectedTime, 'bi-alarm-fill': selectedTime }"
-    ></i>
+    />
   </div>
 
   <ul
@@ -18,47 +47,18 @@
   >
     <div class="d-flex align-items-center mx-3">
       <input
-        type="time"
         v-model="selectedTime"
+        type="time"
         @blur="selectTime(selectedTime)"
-      />
+      >
       <i
         class="header-menu-icons bi-trash"
         type="button"
         @click="clearTime"
-      ></i>
+      />
     </div>
   </ul>
 </template>
-
-<script>
-export default {
-  name: "timePicker",
-  emits: ["timeSelected"],
-  data() {
-    return {
-      selectedTime: "",
-    };
-  },
-  props: {
-    time: { required: true, type: [String, null] },
-  },
-  methods: {
-    selectTime(time) {
-      this.$emit("timeSelected", time);
-    },
-    clearTime() {
-      this.selectedTime = null;
-      this.selectTime(this.selectedTime);
-    },
-  },
-  watch: {
-    time: function (newVal) {
-      this.selectedTime = newVal;
-    },
-  },
-};
-</script>
 
 <style scoped lang="scss">
 @import "/src/assets/style/globalVars.scss";

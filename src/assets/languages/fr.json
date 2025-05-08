@@ -27,7 +27,7 @@
     "clearData": "Effacer les données",
     "exportData": "Exporter des données",
     "importData": "Importer des données",
-    "clearDataDetails": "Voulez-vous vraiment supprimer toutes les données de l'application ? Cette action est irréversible.",
+    "clearDataDetails": "Voulez-vous vraiment supprimer toutes les données de l'application ? Cette action est irréversible.",
     "runInBackground": "De fonctionner en arrière-plan",
     "runInBackgroundInfo": "Autorise les notifications à fonctionner avec l'application fermée.\n \nCette option peut poser des problèmes pour certaines versions de macOS.",
     "moveOldTasks": "Déplacer automatiquement les anciennes tâches",
@@ -48,7 +48,7 @@
   "donate": {
     "contribute": "Contribuer",
     "contributeSponsor": "Contribuer / Parrainer",
-    "supportMessage1": "WeekToDo est une application gratuite soutenue par des utilisateurs comme vous ! \nSi vous trouvez WeekToDo utile, pensez à nous soutenir de toutes les manières possibles. \nVotre soutien fait la différence. \nMerci d'utiliser WeekToDo.",
+    "supportMessage1": "WeekToDo est une application gratuite soutenue par des utilisateurs comme vous ! \nSi vous trouvez WeekToDo utile, pensez à nous soutenir de toutes les manières possibles. \nVotre soutien fait la différence. \nMerci d'utiliser WeekToDo.",
     "supportMessage2": "Votre soutien fait la différence. \nMerci de soutenir WeekToDo 😊",
     "comment": "Envoyer un commentaire",
     "crypto": "Crypto",
@@ -141,7 +141,7 @@
   "ui": {
     "rmList": "Supprimer la liste",
     "rmListConfirm": "Êtes-vous sûr de vouloir supprimer la liste",
-    "repeatingTaskRemoveConfirm": "Voulez-vous vraiment supprimer cette tâche récurrente ?",
+    "repeatingTaskRemoveConfirm": "Voulez-vous vraiment supprimer cette tâche récurrente ?",
     "removeRepeatingTask": "Supprimer la tâche répétitive",
     "cancel": "Annuler",
     "ok": "D'accord",
@@ -169,7 +169,7 @@
     "undo": "Annuler",
     "clearList": "Effacer la liste",
     "clear": "Dégager",
-    "clearListConfirm": "Voulez-vous vraiment effacer la liste ?",
+    "clearListConfirm": "Voulez-vous vraiment effacer la liste ?",
     "reorder": "Réorganiser",
     "maximizeCalendarPanel": "Agrandir le panneau du calendrier",
     "restorePanel": "Restaurer la taille du panneau",
@@ -216,8 +216,8 @@
   },
   "notifications": {
     "noPendingTasksToday": "Vous n'avez aucune tâche planifiée aujourd'hui.",
-    "pendingTasksYesterday": "Vous avez {0} tâches en attente hier.",
-    "pendingTasksToday": "Vous avez {0} tâches planifiées aujourd'hui.",
-    "pendingTasksYesterdayAndToday": "Vous avez {0} tâches en attente hier et {1} tâches planifiées aujourd'hui."
+    "pendingTasksYesterday": "Vous avez {0} tâches en attente hier.",
+    "pendingTasksToday": "Vous avez {0} tâches planifiées aujourd'hui.",
+    "pendingTasksYesterdayAndToday": "Vous avez {0} tâches en attente hier et {1} tâches planifiées aujourd'hui."
   }
 }

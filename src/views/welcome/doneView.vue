@@ -1,52 +1,54 @@
+<script>
+import initialDataCreator from '../../helpers/initialDataCreator'
+
+export default {
+  name: 'DoneView',
+  data() {
+    return {
+      darkTheme: this.$store.getters.config.darkTheme,
+    }
+  },
+  methods: {
+    back() {
+      document.getElementById('welcome-3-tab').click()
+    },
+    finish() {
+      initialDataCreator.create(this)
+    },
+  },
+}
+</script>
+
 <template>
   <div class="row">
     <div class="col-md-4">
       <div class="icon-container">
-        <i class="bi-check-circle"></i>
+        <i class="bi-check-circle" />
       </div>
     </div>
     <div class="col-md-8">
       <div>
-        <h4> {{$t('welcome.allReady')}}</h4>
-        <h6> {{$t('welcome.allReadyText')}} </h6>
-        <span class="sub-header"> {{$t('welcome.allReadySub')}} <i
-          class="bi-info-square"></i></span>
+        <h4> {{ $t('welcome.allReady') }}</h4>
+        <h6> {{ $t('welcome.allReadyText') }} </h6>
+        <span class="sub-header"> {{ $t('welcome.allReadySub') }} <i
+          class="bi-info-square"
+        /></span>
       </div>
     </div>
   </div>
   <div class="d-flex btn-footer mt-3">
-    <button type="button" class="btn flex-fill" @click="back"><i class="bi-chevron-double-left"></i>
-      {{$t('welcome.next')}}
+    <button type="button" class="btn flex-fill" @click="back">
+      <i class="bi-chevron-double-left" />
+      {{ $t('welcome.next') }}
     </button>
-    <button type="button" class="btn flex-fill" data-bs-dismiss="modal" @click="finish">{{$t('welcome.ready')}}</button>
+    <button type="button" class="btn flex-fill" data-bs-dismiss="modal" @click="finish">
+      {{ $t('welcome.ready') }}
+    </button>
   </div>
-
 </template>
 
-<script>
-    import initialDataCreator from "../../helpers/initialDataCreator";
-
-    export default {
-        name: "doneView",
-        data() {
-            return {
-                darkTheme: this.$store.getters.config.darkTheme
-            }
-        },
-        methods: {
-            back: function () {
-                document.getElementById('welcome-3-tab').click();
-            },
-            finish: function () {
-                initialDataCreator.create(this);
-            }
-        }
-    }
-</script>
-
 <style scoped>
-
-  .form-check-input {
+.form-check-input {
     width: 2.8em !important;
     height: 1.4em !important;
   }
@@ -96,6 +98,4 @@
   .sub-header i {
     margin-left: 5px;
   }
-
-
 </style>

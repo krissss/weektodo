@@ -1,3 +1,99 @@
+<script>
+import moment from 'moment'
+import Datepicker from 'vue3-datepicker'
+import languageHelper from '../../helpers/languageHelper.js'
+import customToDoListIdsRepository from '../../repositories/customToDoListIdsRepository'
+import toDoListRepository from '../../repositories/toDoListRepository'
+
+export default {
+  name: 'SideBar',
+  components: {
+    Datepicker,
+  },
+  emits: ['changeDate'],
+  data() {
+    return {
+      pickedDate: new Date(),
+      datepickerEnabled: false,
+    }
+  },
+  computed: {
+    showCustomList() {
+      return this.$store.getters.config.customList
+    },
+    showCalendar() {
+      return this.$store.getters.config.calendar
+    },
+    weekStartOnMonday() {
+      return this.$store.getters.config.weekStartOnMonday ? 1 : 0
+    },
+    language() {
+      const lang = this.$store.getters.config.language
+      return languageHelper.getLanguagePack(lang)
+    },
+  },
+  watch: {
+    pickedDate(val) {
+      if (this.datepickerEnabled) {
+        document.getElementById('side-bar-date-picker-input').removeEventListener('focusout', this.resetDatePicker)
+        this.datepickerEnabled = false
+        this.$emit('changeDate', moment(val).format('YYYYMMDD'))
+        this.pickedDate = new Date()
+      }
+    },
+  },
+  mounted() {
+    window.addEventListener('beforeprint', () => {
+      document.getElementById('app-container').classList.add('ready-to-print')
+      if (JSON.parse(localStorage.getItem('config')).darkTheme)
+        document.getElementById('app-container').classList.remove('dark-theme')
+    })
+
+    window.addEventListener('afterprint', () => {
+      document.getElementById('app-container').classList.remove('ready-to-print')
+      if (JSON.parse(localStorage.getItem('config')).darkTheme)
+        document.getElementById('app-container').classList.add('dark-theme')
+    })
+  },
+  methods: {
+    changeDate() {
+      this.datepickerEnabled = true
+      this.$nextTick(function () {
+        document.getElementById('side-bar-date-picker-input').click()
+        document.getElementById('side-bar-date-picker-input').focus()
+        document.getElementById('side-bar-date-picker-input').addEventListener('focusout', this.resetDatePicker)
+        document.getElementById('side-bar-date-picker-input').onkeydown = function (evt) {
+          evt.keyCode == 27 && document.getElementById('side-bar-date-picker-input').blur()
+        }
+      })
+    },
+    setTodayDate() {
+      this.$emit('changeDate', moment().format('YYYYMMDD'))
+    },
+    newCustomTodoList() {
+      const customTodoListId = { listId: moment().format('YYYYMMDDTHHmmssS'), listName: '' }
+      this.$store.commit('actionsCListCreatedUpdate', true)
+      this.$store.commit('newCustomTodoList', customTodoListId)
+      customToDoListIdsRepository.update(this.$store.getters.cTodoListIds)
+      toDoListRepository.update(customTodoListId.listId, this.$store.getters.todoLists[customTodoListId.listId])
+    },
+    resetDatePicker() {
+      document.getElementById('side-bar-date-picker-input').removeEventListener('focusout', this.resetDatePicker)
+      this.datepickerEnabled = false
+    },
+    openConfigModal() {
+      document.getElementById('config-general-tab').click()
+    },
+    openDonateModal() {
+      window.open('https://weektodo.me/support-us', '_blank')
+    },
+    print() {
+      window.print()
+    },
+  },
+}
+</script>
+
 <template>
   <div class="side-bar">
     <img
@@ -9,7 +105,7 @@
       data-bs-toggle="modal"
       data-bs-target="#aboutModal"
       :title="$t('about.about')"
-    />
+    >
     <img
       class="logo logo-white"
       src="/img/logo-white.svg"
@@ -19,16 +115,16 @@
       data-bs-toggle="modal"
       data-bs-target="#aboutModal"
       :title="$t('about.about')"
-    />
-    <i v-if="showCalendar" class="bi-house" @click="setTodayDate" :title="$t('ui.today')"></i>
-    <datepicker
+    >
+    <i v-if="showCalendar" class="bi-house" :title="$t('ui.today')" @click="setTodayDate" />
+    <Datepicker
       v-if="datepickerEnabled"
       id="side-bar-date-picker-input"
       v-model="pickedDate"
       :locale="language"
-      :weekStartsOn="weekStartOnMonday"
+      :week-starts-on="weekStartOnMonday"
     />
-    <i v-if="showCalendar" class="bi-calendar-event" @click="changeDate" :title="$t('ui.calendar')"> </i>
+    <i v-if="showCalendar" class="bi-calendar-event" :title="$t('ui.calendar')" @click="changeDate" />
     <!-- <i class="bi-search" :title="$t('donate.supportUs')"></i>
     <i class="bi-filter" :title="$t('donate.supportUs')" ></i> -->
     <i
@@ -37,148 +133,51 @@
       :title="$t('ui.recurringTasks')"
       data-bs-toggle="modal"
       data-bs-target="#RecurrentEventsModal"
-    >
-    </i>
-    <i v-if="showCustomList" class="bi bi-clipboard-plus" @click="newCustomTodoList" :title="$t('ui.newCustomList')"></i>
+    />
+    <i v-if="showCustomList" class="bi bi-clipboard-plus" :title="$t('ui.newCustomList')" @click="newCustomTodoList" />
     <i
       v-if="showCustomList"
       class="bi bi-arrow-left-right"
       data-bs-target="#ReorderCustomListsModal"
       data-bs-toggle="modal"
       :title="$t('ui.reorderCustomLists')"
-    ></i>
-    <span style="flex-grow: 1"></span>
+    />
+    <span style="flex-grow: 1" />
     <div class="dropend d-flex justify-content-center sidebar-extra-menu">
-      <i class="bi-three-dots sidebar-icon align-self-center" type="button" data-bs-toggle="dropdown"></i>
+      <i class="bi-three-dots sidebar-icon align-self-center" type="button" data-bs-toggle="dropdown" />
       <ul class="dropdown-menu mx-3" aria-labelledby="btnTaskOptionMenu">
         <li>
           <button class="dropdown-item" type="button" @click="print">
-            <i class="bi-printer"></i> <span>{{ $t("ui.print") }} </span>
+            <i class="bi-printer" /> <span>{{ $t("ui.print") }} </span>
           </button>
         </li>
         <li>
-          <hr class="dropdown-divider" />
+          <hr class="dropdown-divider">
         </li>
         <li>
           <a href="https://weektodo.me/support-us" target="_blank" class="dropdown-item" type="button">
-            <i class="bi-gift"></i> <span>{{ $t("donate.supportUs") }}</span>
+            <i class="bi-gift" /> <span>{{ $t("donate.supportUs") }}</span>
           </a>
         </li>
         <li>
           <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#aboutModal">
-            <i class="bi-info-circle"></i> <span>{{ $t("about.about") }}</span>
+            <i class="bi-info-circle" /> <span>{{ $t("about.about") }}</span>
           </button>
         </li>
       </ul>
     </div>
 
     <!-- <i class="bi-person-circle" :title="$t('donate.supportUs')" @click="openDonateModal"></i> -->
-    <i class="bi-info-square" data-bs-toggle="modal" data-bs-target="#tipsModal" :title="$t('tips.tips')"></i>
+    <i class="bi-info-square" data-bs-toggle="modal" data-bs-target="#tipsModal" :title="$t('tips.tips')" />
     <i
       class="bi-gear"
       data-bs-toggle="modal"
       data-bs-target="#configModal"
       :title="$t('settings.settings')"
       @click="openConfigModal"
-    ></i>
+    />
   </div>
 </template>
-
-<script>
-import moment from "moment";
-import customToDoListIdsRepository from "../../repositories/customToDoListIdsRepository";
-import toDoListRepository from "../../repositories/toDoListRepository";
-import Datepicker from "vue3-datepicker";
-import languageHelper from "../../helpers/languageHelper.js";
-
-export default {
-  name: "sideBar",
-  emits: ["changeDate"],
-  components: {
-    Datepicker,
-  },
-  data() {
-    return {
-      pickedDate: new Date(),
-      datepickerEnabled: false,
-    };
-  },
-  mounted() {
-    window.addEventListener("beforeprint", () => {
-      document.getElementById("app-container").classList.add("ready-to-print");
-      if (JSON.parse(localStorage.getItem("config")).darkTheme)
-        document.getElementById("app-container").classList.remove("dark-theme");
-    });
-
-    window.addEventListener("afterprint", () => {
-      document.getElementById("app-container").classList.remove("ready-to-print");
-      if (JSON.parse(localStorage.getItem("config")).darkTheme)
-        document.getElementById("app-container").classList.add("dark-theme");
-    });
-  },
-  methods: {
-    changeDate: function () {
-      this.datepickerEnabled = true;
-      this.$nextTick(function () {
-        document.getElementById("side-bar-date-picker-input").click();
-        document.getElementById("side-bar-date-picker-input").focus();
-        document.getElementById("side-bar-date-picker-input").addEventListener("focusout", this.resetDatePicker);
-        document.getElementById("side-bar-date-picker-input").onkeydown = function (evt) {
-          evt.keyCode == 27 && document.getElementById("side-bar-date-picker-input").blur();
-        };
-      });
-    },
-    setTodayDate: function () {
-      this.$emit("changeDate", moment().format("YYYYMMDD"));
-    },
-    newCustomTodoList: function () {
-      const customTodoListId = { listId: moment().format("YYYYMMDDTHHmmssS"), listName: "" };
-      this.$store.commit("actionsCListCreatedUpdate", true);
-      this.$store.commit("newCustomTodoList", customTodoListId);
-      customToDoListIdsRepository.update(this.$store.getters.cTodoListIds);
-      toDoListRepository.update(customTodoListId.listId, this.$store.getters.todoLists[customTodoListId.listId]);
-    },
-    resetDatePicker: function () {
-      document.getElementById("side-bar-date-picker-input").removeEventListener("focusout", this.resetDatePicker);
-      this.datepickerEnabled = false;
-    },
-    openConfigModal: function () {
-      document.getElementById("config-general-tab").click();
-    },
-    openDonateModal: function () {
-      window.open("https://weektodo.me/support-us", "_blank");
-    },
-    print: function () {
-      window.print();
-    },
-  },
-  watch: {
-    pickedDate: function (val) {
-      if (this.datepickerEnabled) {
-        document.getElementById("side-bar-date-picker-input").removeEventListener("focusout", this.resetDatePicker);
-        this.datepickerEnabled = false;
-        this.$emit("changeDate", moment(val).format("YYYYMMDD"));
-        this.pickedDate = new Date();
-      }
-    },
-  },
-  computed: {
-    showCustomList: function () {
-      return this.$store.getters.config.customList;
-    },
-    showCalendar: function () {
-      return this.$store.getters.config.calendar;
-    },
-    weekStartOnMonday: function () {
-      return this.$store.getters.config.weekStartOnMonday ? 1 : 0;
-    },
-    language: function () {
-      let lang = this.$store.getters.config.language;
-      return languageHelper.getLanguagePack(lang);
-    },
-  },
-};
-</script>
 
 <style scoped lang="scss">
 .side-bar {

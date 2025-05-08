@@ -1,62 +1,68 @@
+<script>
+import configRepository from '../../repositories/configRepository'
+
+export default {
+  name: 'LanguageView',
+  data() {
+    return {
+      darkTheme: this.$store.getters.config.darkTheme,
+    }
+  },
+  methods: {
+    changeDarkTheme() {
+      this.$nextTick(function () {
+        this.$store.commit('updateConfig', { val: this.darkTheme, key: 'darkTheme' })
+        configRepository.update(this.$store.getters.config)
+      })
+    },
+    next() {
+      document.getElementById('welcome-3-tab').click()
+    },
+    back() {
+      document.getElementById('welcome-1-tab').click()
+    },
+  },
+}
+</script>
+
 <template>
-  <div class="row" >
+  <div class="row">
     <div class="col-md-4">
       <div class="icon-container">
-        <i class="bi-circle-half"></i>
+        <i class="bi-circle-half" />
       </div>
     </div>
     <div class="col-md-8">
       <div>
         <h4> {{ $t('welcome.theme') }}</h4>
-        <text> {{ $t('welcome.themeText') }}
+        <text>
+          {{ $t('welcome.themeText') }}
         </text>
         <div style="padding-left: 50px;" class="pt-4">
-          <label class="form-check-label"><i class="bi-sun"></i></label>
+          <label class="form-check-label"><i class="bi-sun" /></label>
           <div class="form-check form-switch form-check-inline">
-            <input class="form-check-input" type="checkbox" v-model="darkTheme"
-              @change="changeDarkTheme">
+            <input
+              v-model="darkTheme" class="form-check-input" type="checkbox"
+              @change="changeDarkTheme"
+            >
           </div>
-          <label class="form-check-label"><i class="bi-moon-stars"></i></label>
+          <label class="form-check-label"><i class="bi-moon-stars" /></label>
         </div>
       </div>
     </div>
   </div>
   <div class="d-flex btn-footer mt-3">
-    <button type="button" class="btn flex-fill" @click="back"><i class="bi-chevron-double-left"></i>
+    <button type="button" class="btn flex-fill" @click="back">
+      <i class="bi-chevron-double-left" />
       {{ $t('welcome.back') }}
     </button>
-    <button type="button" class="btn flex-fill" @click="next">{{ $t('welcome.next') }} <i
-        class="bi-chevron-double-right"></i></button>
+    <button type="button" class="btn flex-fill" @click="next">
+      {{ $t('welcome.next') }} <i
+        class="bi-chevron-double-right"
+      />
+    </button>
   </div>
-
 </template>
-
-<script>
-import configRepository from "../../repositories/configRepository";
-
-export default {
-  name: "languageView",
-  data() {
-    return {
-      darkTheme: this.$store.getters.config.darkTheme
-    }
-  },
-  methods: {
-    changeDarkTheme: function () {
-      this.$nextTick(function () {
-        this.$store.commit('updateConfig', { val: this.darkTheme, key: "darkTheme" });
-        configRepository.update(this.$store.getters.config);
-      });
-    },
-    next: function () {
-      document.getElementById('welcome-3-tab').click();
-    },
-    back: function () {
-      document.getElementById('welcome-1-tab').click();
-    }
-  }
-}
-</script>
 
 <style scoped>
 .form-check-input {
@@ -68,7 +74,6 @@ export default {
   margin-right: 40px;
   color: #383a3b;
 }
-
 
 .bi-moon-stars {
   margin-left: 20px;

@@ -1,46 +1,50 @@
-<template>
-  <div class="row">
-    <div class="col-md-4">
-      <div class="icon-container">
-        <i class="bi-exclamation-triangle"></i>
-      </div>
-    </div>
-    <div class="col-md-8">
-      <div>
-        <h4> {{ $t('welcome.privacy') }}</h4>
-        <div class="mb-1">{{ $t('welcome.privacyText') }}</div>
-        <span class="sub-header">{{ $t('welcome.privacySub') }} </span>
-      </div>
-    </div>
-  </div>
-  <div class="d-flex btn-footer mt-3">
-    <button type="button" class="btn flex-fill" @click="back"><i class="bi-chevron-double-left"></i>
-      {{ $t('welcome.back') }}
-    </button>
-    <button type="button" class="btn flex-fill" @click="next">{{ $t('welcome.next') }} <i
-        class="bi-chevron-double-right"></i></button>
-  </div>
-
-</template>
-
 <script>
-
 export default {
-  name: "backupView",
+  name: 'BackupView',
   data() {
     return {
     }
   },
   methods: {
-    next: function () {
-      document.getElementById('welcome-4-tab').click();
+    next() {
+      document.getElementById('welcome-4-tab').click()
     },
-    back: function () {
-      document.getElementById('welcome-2-tab').click();
-    }
-  }
+    back() {
+      document.getElementById('welcome-2-tab').click()
+    },
+  },
 }
 </script>
+
+<template>
+  <div class="row">
+    <div class="col-md-4">
+      <div class="icon-container">
+        <i class="bi-exclamation-triangle" />
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div>
+        <h4> {{ $t('welcome.privacy') }}</h4>
+        <div class="mb-1">
+          {{ $t('welcome.privacyText') }}
+        </div>
+        <span class="sub-header">{{ $t('welcome.privacySub') }} </span>
+      </div>
+    </div>
+  </div>
+  <div class="d-flex btn-footer mt-3">
+    <button type="button" class="btn flex-fill" @click="back">
+      <i class="bi-chevron-double-left" />
+      {{ $t('welcome.back') }}
+    </button>
+    <button type="button" class="btn flex-fill" @click="next">
+      {{ $t('welcome.next') }} <i
+        class="bi-chevron-double-right"
+      />
+    </button>
+  </div>
+</template>
 
 <style scoped>
 .form-check-input {

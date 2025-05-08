@@ -1,12 +1,12 @@
 const state = {
   activeTodo: {
     toDo: {
-      text: "Text",
+      text: 'Text',
       checked: false,
       listId: 1,
-      desc: "",
+      desc: '',
       subTaskList: [],
-      color: "none",
+      color: 'none',
       priority: 0,
       tags: [],
       time: null,
@@ -14,21 +14,21 @@ const state = {
       repeatingEvent: null,
     },
   },
-};
+}
 
 const getters = {
   activeTodo(state) {
-    return state.activeTodo;
+    return state.activeTodo
   },
-};
+}
 
 const mutations = {
   setActiveTodo(state, obj) {
-    state.activeTodo = obj;
+    state.activeTodo = obj
   },
-};
+}
 
-const actions = {};
+const actions = {}
 
 export default {
   namespaced: false,
@@ -36,4 +36,4 @@ export default {
   getters,
   actions,
   mutations,
-};
+}

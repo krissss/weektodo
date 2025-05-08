@@ -1,73 +1,76 @@
-<template>
-    <div class="position-relative" v-show="editingDescription">
-        <textarea class="todo-description-textarea mt-2" @input="resizeTextArea" :placeholder="$t('todoDetails.notes')"
-            ref="descriptionInput" @blur="doneEditDescription" v-model="desc">
-                </textarea>
-        <i class="bi-markdown-fill" @mousedown="goToMarkDown" :title="$t('todoDetails.markdown')"></i>
-    </div>
-    <div v-show="!editingDescription && desc != ''" class="mt-2 todo-description" @dblclick="editDescription"
-        v-html="todoDescription()"> </div>
-    <div v-show="!editingDescription && desc.replace(/^\s*$(?:\r\n?|\n)/gm, '') == ''" @dblclick="editDescription"
-        class="description-empty mt-2">
-        {{ $t("todoDetails.notes") }}
-    </div>
-</template>
-
 <script>
-import MarkdownIt from 'markdown-it';
-import markdownTargetBlankLinks from '../../helpers/markdownTargetBlankLinks';
-
+import MarkdownIt from 'markdown-it'
+import markdownTargetBlankLinks from '../../helpers/markdownTargetBlankLinks'
 
 export default {
-    name: "descriptionTextArea",
-    emits: ["updatedDescription"],
-    data() {
-        return {
-            desc: "",
-            editingDescription: false,
-            md: new MarkdownIt()
-        }
-    },
-    mounted() {
-        markdownTargetBlankLinks.renderBlankLinks(this.md);
-    },
-    props: {
-        todoDesc: { required: true }
-    },
-    methods: {
-        resizeTextArea: function () {
-            let textArea = this.$refs["descriptionInput"];
-            textArea.style.height = "18px";
-            textArea.style.height = textArea.scrollHeight + "px";
-        },
-        editDescription: function () {
-            this.editingDescription = true;
-            this.$nextTick(function () {
-                this.resizeTextArea();
-                this.$refs["descriptionInput"].focus();
-                this.$refs["descriptionInput"].setSelectionRange(0, 0);
-                this.$refs["descriptionInput"].scrollTop = 0;
-            });
-        },
-        doneEditDescription: function () {
-            this.editingDescription = false;
-            this.$emit('updatedDescription', this.desc);
-        },
-        todoDescription: function () {
-            return this.md.render(this.desc);
-        },
-        goToMarkDown: function () {
-            window.open("https://commonmark.org/help/", "_blank");
-        },
-    },
-    watch: {
-        todoDesc(newValue) {
-            this.desc = newValue
-        }
+  name: 'DescriptionTextArea',
+  props: {
+    todoDesc: { required: true },
+  },
+  emits: ['updatedDescription'],
+  data() {
+    return {
+      desc: '',
+      editingDescription: false,
+      md: new MarkdownIt(),
     }
+  },
+  watch: {
+    todoDesc(newValue) {
+      this.desc = newValue
+    },
+  },
+  mounted() {
+    markdownTargetBlankLinks.renderBlankLinks(this.md)
+  },
+  methods: {
+    resizeTextArea() {
+      const textArea = this.$refs.descriptionInput
+      textArea.style.height = '18px'
+      textArea.style.height = `${textArea.scrollHeight}px`
+    },
+    editDescription() {
+      this.editingDescription = true
+      this.$nextTick(function () {
+        this.resizeTextArea()
+        this.$refs.descriptionInput.focus()
+        this.$refs.descriptionInput.setSelectionRange(0, 0)
+        this.$refs.descriptionInput.scrollTop = 0
+      })
+    },
+    doneEditDescription() {
+      this.editingDescription = false
+      this.$emit('updatedDescription', this.desc)
+    },
+    todoDescription() {
+      return this.md.render(this.desc)
+    },
+    goToMarkDown() {
+      window.open('https://commonmark.org/help/', '_blank')
+    },
+  },
 }
-
 </script>
+
+<template>
+  <div v-show="editingDescription" class="position-relative">
+    <textarea
+      ref="descriptionInput" v-model="desc" class="todo-description-textarea mt-2"
+      :placeholder="$t('todoDetails.notes')" @input="resizeTextArea" @blur="doneEditDescription"
+    />
+    <i class="bi-markdown-fill" :title="$t('todoDetails.markdown')" @mousedown="goToMarkDown" />
+  </div>
+  <div
+    v-show="!editingDescription && desc != ''" class="mt-2 todo-description" @dblclick="editDescription"
+    v-html="todoDescription()"
+  />
+  <div
+    v-show="!editingDescription && desc.replace(/^\s*$(?:\r\n?|\n)/gm, '') == ''" class="description-empty mt-2"
+    @dblclick="editDescription"
+  >
+    {{ $t("todoDetails.notes") }}
+  </div>
+</template>
 
 <style>
 .todo-description-textarea {
@@ -102,7 +105,6 @@ export default {
         opacity: 1;
     }
 }
-
 
 .todo-description {
     word-wrap: break-word;

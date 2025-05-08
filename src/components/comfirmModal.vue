@@ -1,34 +1,6 @@
-<template>
-  <div class="modal fade" :id="id" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-body">
-          <div class="d-flex flex-row">
-            <i :class="ico" class="main-icon" style="font-size: 38px; margin-right: 30px"></i>
-            <div style="margin-top: 2px">
-              <h6 class="modal-title">{{ title }}</h6>
-              <text class="modal-title" style="font-size: 0.9rem">
-                {{ text }}
-              </text>
-            </div>
-          </div>
-        </div>
-        <div class="horizontal-divider"></div>
-        <div class="modal-footer d-flex">
-          <button type="button" class="btn flex-fill" data-bs-dismiss="modal"
-            :data-bs-target="'#' + id" @click="onCancel"> {{ $t("ui.cancel") }} </button>
-          <button type="button" class="btn flex-fill" data-bs-dismiss="modal"  @click="onOk"> {{
-              okText
-          }} </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script>
 export default {
-  name: "comfirmModal",
+  name: 'ComfirmModal',
   props: {
     id: { required: true },
     title: { required: true },
@@ -37,11 +9,47 @@ export default {
     ico: { required: true },
   },
   methods: {
-    onOk: function () { this.$emit("onOk"); },
-    onCancel: function () { this.$emit("onCancel"); }
-  }
-};
+    onOk() { this.$emit('onOk') },
+    onCancel() { this.$emit('onCancel') },
+  },
+}
 </script>
+
+<template>
+  <div :id="id" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body">
+          <div class="d-flex flex-row">
+            <i :class="ico" class="main-icon" style="font-size: 38px; margin-right: 30px" />
+            <div style="margin-top: 2px">
+              <h6 class="modal-title">
+                {{ title }}
+              </h6>
+              <text class="modal-title" style="font-size: 0.9rem">
+                {{ text }}
+              </text>
+            </div>
+          </div>
+        </div>
+        <div class="horizontal-divider" />
+        <div class="modal-footer d-flex">
+          <button
+            type="button" class="btn flex-fill" data-bs-dismiss="modal"
+            :data-bs-target="`#${id}`" @click="onCancel"
+          >
+            {{ $t("ui.cancel") }}
+          </button>
+          <button type="button" class="btn flex-fill" data-bs-dismiss="modal" @click="onOk">
+            {{
+              okText
+            }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .modal-content {

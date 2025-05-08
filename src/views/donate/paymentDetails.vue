@@ -1,54 +1,57 @@
+<script>
+import { Toast } from 'bootstrap'
+
+export default {
+  name: 'PaymentDetails',
+  props: {
+    address: { required: false, type: String },
+    payment: { required: true, type: String },
+    qrImg: { required: false, type: String },
+  },
+  data() {
+    return {
+      paymentAddress: this.address,
+    }
+  },
+  methods: {
+    async copy() {
+      await navigator.clipboard.writeText(this.paymentAddress)
+      const toast = new Toast(document.getElementById('copiedAddress'))
+      toast.show()
+    },
+    goHome() {
+      document.getElementById('cryptoTab').click()
+    },
+  },
+}
+</script>
+
 <template>
   <div class="d-flex flex-column mt-3 h-100">
     <div class="col-12 d-flex flex-column align-items-center">
       <img class="qr-payment" :src="qrImg">
     </div>
     <div class="mb-2 mt-2 w-100 text-center">
-      <h6 class="d-inline"> {{$t("donate.paymentType")}}: </h6> {{payment}}
+      <h6 class="d-inline">
+        {{ $t("donate.paymentType") }}:
+      </h6> {{ payment }}
     </div>
     <div class="col-md-12 d-flex flex-column mt-3 ">
       <div v-if="paymentAddress" class="d-flex flex-column align-items-center">
-        <label class="form-label">{{$t("donate.address")}} </label>
+        <label class="form-label">{{ $t("donate.address") }} </label>
         <div class="input-group mb-3">
-          <input type="text" class="form-control" v-model="paymentAddress" readonly>
-          <span class="input-group-text" id="basic-addon2" @click="copy">{{$t("donate.copy")}} <i
-            class="bi-files"> </i></span>
+          <input v-model="paymentAddress" type="text" class="form-control" readonly>
+          <span id="basic-addon2" class="input-group-text" @click="copy">{{ $t("donate.copy") }} <i
+            class="bi-files"
+          /></span>
         </div>
       </div>
     </div>
     <button class="btn mt-auto" type="button" @click="goHome">
-      <i class="bi-arrow-left a"></i> {{$t("donate.goBack")}}
+      <i class="bi-arrow-left a" /> {{ $t("donate.goBack") }}
     </button>
   </div>
 </template>
-
-<script>
-    import {Toast} from 'bootstrap';
-
-    export default {
-        name: "paymentDetails",
-        props: {
-            address: {required: false, type: String},
-            payment: {required: true, type: String},
-            qrImg: {required: false, type: String},
-        },
-        data() {
-            return {
-                paymentAddress: this.address
-            }
-        },
-        methods: {
-            async copy() {
-                await navigator.clipboard.writeText(this.paymentAddress);
-                var toast = new Toast(document.getElementById('copiedAddress'));
-                toast.show();
-            },
-            goHome: function () {
-                document.getElementById("cryptoTab").click()
-            }
-        }
-    }
-</script>
 
 <style scoped>
   .qr-payment {
@@ -96,5 +99,4 @@
   .form-control:focus {
     box-shadow: none;
   }
-
 </style>

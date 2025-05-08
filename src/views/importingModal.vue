@@ -1,5 +1,15 @@
+<script>
+export default {
+  name: 'ImportingModal',
+  props: {
+    text: { type: String, required: true },
+    id: { type: String, required: true },
+  },
+}
+</script>
+
 <template>
-  <div class="modal  fade" :id="id" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div :id="id" class="modal  fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-body d-flex align-items-center justify-content-center">
@@ -14,19 +24,6 @@
     </div>
   </div>
 </template>
-
-<script>
-
-export default {
-  name: "importingModal",
-  props: {
-    text: { type: String, required: true },
-    id: { type: String, required: true },
-  },
-}
-
-
-</script>
 
 <style scoped>
 .loading-spinner {
