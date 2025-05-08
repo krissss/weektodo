@@ -41,12 +41,7 @@
                 window.open(link);
             },
             externaLink: function (link) {
-                let isElectron = require("is-electron");
-                if (isElectron()) {
-                    require('electron').shell.openExternal(link, '_blank');
-                } else {
-                    window.open(link, '_blank');
-                }
+                window.open(link, '_blank');
             },
             tagIdLink: function (id) {
                 document.getElementById(id).click();

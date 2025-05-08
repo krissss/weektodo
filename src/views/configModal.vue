@@ -384,48 +384,25 @@ export default {
       exportTool.import(event);
     },
     isElectron: function () {
-      let isElectron = require("is-electron");
-      return isElectron();
+      return false;
     },
     goHome: function () {
       document.getElementById("config-home-tab").click();
     },
     setOpenOnStart: function () {
       this.changeConfig("openOnStartup", this.configData.openOnStartup);
-      this.$nextTick(function () {
-        if (this.isElectron()) {
-          const { ipcRenderer } = require('electron');
-          ipcRenderer.send('set-open-on-startup', this.configData.openOnStartup);
-        }
-      });
     },
     setRunInBackground: function () {
       this.changeConfig("runInBackground", this.configData.runInBackground);
-      this.$nextTick(function () {
-        if (this.isElectron()) {
-          const { ipcRenderer } = require('electron');
-          ipcRenderer.send('set-run-in-background', this.configData.runInBackground);
-        }
-      });
     },
     setLanguage: function () {
       this.changeConfig('language', this.configData.language);
-      this.$nextTick(function () {
-        if (this.isElectron()) {
-          const { ipcRenderer } = require('electron');
-          ipcRenderer.send('set-tray-context-menu-label', { open: this.$t("ui.open"), quit: this.$t("ui.quit") });
-        }
-      });
     },
     setSendErrors: function () {
       this.changeConfig('reportErrors', this.configData.reportErrors);
     },
     setDarkTrayIcon: function () {
       this.changeConfig('darkTrayIcon', this.configData.darkTrayIcon);
-      this.$nextTick(function () {
-        const { ipcRenderer } = require('electron');
-        ipcRenderer.send('set-dark-tray-icon', this.configData.darkTrayIcon);
-      });
     },
     playSound: function () {
       notifications.playNotificationSound(

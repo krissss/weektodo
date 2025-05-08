@@ -16,7 +16,4 @@ pnpm-debug.log*
 .idea
 .vscode
 
-#Electron-builder output
-/dist_electron
-
 .env

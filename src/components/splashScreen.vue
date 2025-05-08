@@ -11,14 +11,14 @@
           <img
             v-if="darkTheme"
             class="logo"
-            src="../../public/img/weektodo-isologo-white.svg"
+            src="/img/weektodo-isologo-white.svg"
             alt="WeekToDo Logo"
             style="display: inline"
           />
           <img
             v-else
             class="logo"
-            src="../../public/img/weektodo-isologo-color.svg"
+            src="/img/weektodo-isologo-color.svg"
             alt="WeekToDo Logo"
             style="display: inline"
           />

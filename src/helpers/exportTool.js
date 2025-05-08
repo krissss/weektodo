@@ -45,11 +45,6 @@ export default {
     };
   },
   clear() {
-    if (isElectron()) {
-      const { ipcRenderer } = require("electron");
-      ipcRenderer.send("clear-config");
-    }
-
     storageRepository.clean();
     let db_req = dbRepository.open();
     db_req.onsuccess = function (event) {

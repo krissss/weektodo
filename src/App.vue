@@ -101,8 +101,8 @@
         </div>
 
         <div v-show="!showCustomList && !showCalendar" style="margin: auto">
-          <img v-if="darkTheme" src="img/WeekToDoDarkLogo.webp" />
-          <img v-else src="img/WeekToDoLightLogo.webp" />
+          <img v-if="darkTheme" src="/img/WeekToDoDarkLogo.webp" />
+          <img v-else src="/img/WeekToDoLightLogo.webp" />
         </div>
       </div>
 
@@ -251,13 +251,6 @@ export default {
       }
     };
 
-    if (isElectron()) {
-      const { ipcRenderer } = require("electron");
-      this.ipcRenderer = ipcRenderer;
-      if (this.$store.getters.config.firstTimeOpen) this.ipcRenderer.send("show-current-window");
-      this.ipcRenderer.send("match-open-on-startup", this.$store.getters.config.openOnStartup);
-    }
-
     if (this.$store.getters.config.importing) {
       this.$store.commit("updateConfig", { val: false, key: "importing" });
       configRepository.update(this.$store.getters.config);
@@ -326,8 +319,7 @@ export default {
       });
     },
     isElectron: function () {
-      let isElectron = require("is-electron");
-      return isElectron();
+      return false;
     },
     hideSplash: function () {
       if (this.isElectron()) {
@@ -508,23 +500,10 @@ export default {
       }
     },
     checkForUpdates: function () {
-      if (this.isElectron() && this.$store.getters.config.checkUpdates) {
-        const axios = require("axios").default;
-        axios
-          .get("https://app.weektodo.me/version.json")
-          .then((response) => this.showNewVersionToast(response))
-          .catch((error) => console.log(error.message));
-      }
+
     },
     checksOnLoadApp: function () {
-      if (this.isElectron()) {
-        require("electron").ipcRenderer.on("initial-checks", () => {
-          this.checkVersion();
-          this.checkForUpdates();
-        });
-      } else {
-        this.checkVersion();
-      }
+      this.checkVersion();
     },
     showNewVersionToast: function (response) {
       if (response.data.version != version_json.version) {
@@ -533,22 +512,13 @@ export default {
       }
     },
     downloadNewVersion: function () {
-      let isElectron = require("is-electron");
-      if (isElectron()) {
-        require("electron").shell.openExternal("https://weektodo.me", "_blank");
-      } else {
-        window.open("https://weektodo.me", "_blank");
-      }
+      window.open("https://weektodo.me", "_blank");
     },
     seeChangeLog: function () {
       window.open("https://weektodo.me/changelog", "_blank");
     },
     syncElectronConfig: function () {
-      const { ipcRenderer } = require("electron");
-      ipcRenderer.send("set-tray-context-menu-label", { open: this.$t("ui.open"), quit: this.$t("ui.quit") });
-      ipcRenderer.send("set-open-on-startup", this.$store.getters.config.openOnStartup);
-      ipcRenderer.send("set-run-in-background", this.$store.getters.config.runInBackground);
-      ipcRenderer.send("set-dark-tray-icon", this.$store.getters.config.darkTrayIcon);
+
     },
   },
   computed: {
