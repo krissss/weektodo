@@ -72,34 +72,6 @@
                     @change="changeConfig('customList', configData.customList)" />
                 </div>
 
-                <div v-if="isElectron()" class="form-check form-switch d-flex px-1 mb-3 justify-content-between">
-                  <label class="form-check-label" for="updatesCheckSetting">{{
-                    $t("settings.checkUpdates")
-                  }}</label>
-                  <input class="form-check-input" type="checkbox" id="updatesCheckSetting"
-                    v-model="configData.checkUpdates" @change="changeConfig('checkUpdates', configData.checkUpdates)" />
-                </div>
-
-                <div v-if="isElectron()" class=" form-check form-switch d-flex px-1 mb-3 justify-content-between">
-                  <label class="form-check-label" for="openOnStartup">{{
-                    $t("settings.openOnStartup")
-                  }}</label>
-                  <input class="form-check-input" type="checkbox" id="openOnStartup" v-model="configData.openOnStartup"
-                    @change="setOpenOnStart()" />
-                </div>
-                <div v-if="isElectron()" class="form-check form-switch d-flex px-1 mb-3 justify-content-between">
-                  <label class="form-check-label" for="runInBackground">
-                    <span>
-                      {{ $t("settings.runInBackground") }}
-                      <sup>
-                        <i class="bi-info-circle" style="cursor: help" :title="$t('settings.runInBackgroundInfo')"> </i>
-                      </sup>
-                    </span>
-                  </label>
-                  <input class="form-check-input" type="checkbox" id="runInBackground"
-                    v-model="configData.runInBackground" @change="setRunInBackground()" />
-                </div>
-
                 <div class="form-check form-switch d-flex px-1 mb-3 justify-content-between">
                   <label class="form-check-label flex-fill" for="reportErrors">{{ $t("settings.reportErrors")
                   }}</label>
@@ -166,13 +138,6 @@
                     @change="changeConfig('darkTheme', configData.darkTheme)" />
                 </div>
 
-                <div v-if="isElectron()" class="form-check form-switch d-flex px-1 mb-3 justify-content-between">
-                  <label class="form-check-label" for="darkTrayIcon">{{
-                    $t("settings.darkIcon")
-                  }}</label>
-                  <input class="form-check-input" type="checkbox" id="darkTrayIcon" v-model="configData.darkTrayIcon"
-                    @change="setDarkTrayIcon" />
-                </div>
                 <div class="horizontal-divider mb-3"></div>
                 <div class="px-1 mb-3">
                   <label for="columnsConfig" class="form-check-label">{{ $t("settings.columns") }}: {{
@@ -217,15 +182,6 @@
             </div>
             <div class="tab-pane fade" id="config-notifications">
               <div class="d-flex flex-column mt-3 h-100">
-                <div v-if="isElectron()" class="orm-check form-switch d-flex px-0 mb-3  justify-content-between">
-                  <label class="form-check-label" style="margin-left: 0px" for="notificationOnStartup">{{
-                    $t("settings.notificationOnStartup")
-                  }}</label>
-                  <input class="form-check-input" type="checkbox" id="notificationOnStartup"
-                    v-model="configData.notificationOnStartup"
-                    @change="changeConfig('notificationOnStartup', configData.notificationOnStartup)" />
-                </div>
-
                 <div class="form-check form-switch d-flex px-0 mb-3  justify-content-between">
                   <label class="form-check-label" style="margin-left: 0px" for="notificationIndicator">{{
                     $t("settings.notificationIndicator")
@@ -382,9 +338,6 @@ export default {
       let importingModal = new Modal(document.getElementById("importingModal"), { backdrop: "static" });
       importingModal.show();
       exportTool.import(event);
-    },
-    isElectron: function () {
-      return false;
     },
     goHome: function () {
       document.getElementById("config-home-tab").click();

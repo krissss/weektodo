@@ -2,7 +2,6 @@
   <input class="hidden-input-for-focus" type="text" />
   <div v-show="compatible" id="app-container" class="app-container" :class="{ 'dark-theme': darkTheme }">
     <div class="hidden-mobile app-body" :style="{ zoom: `${zoom}%` }">
-      <splash-screen ref="splash"></splash-screen>
       <side-bar @change-date="setSelectedDate"></side-bar>
 
       <div class="h-100 d-flex flex-column">
@@ -158,7 +157,6 @@ import sideBar from "./components/layout/sideBar";
 import customToDoListIdsRepository from "./repositories/customToDoListIdsRepository";
 import removeCustomList from "./components/comfirmModals/removeCustomList";
 import configModal from "./views/configModal";
-import splashScreen from "./components/splashScreen";
 import configRepository from "./repositories/configRepository";
 import aboutModal from "./views/aboutModal";
 import donateModal from "./views/donateModal";
@@ -168,7 +166,6 @@ import tipsModal from "./views/tipsModal";
 import { Modal, Toast } from "bootstrap";
 import migrations from "./migrations/migrations";
 import version_json from "./repositories/version";
-import isElectron from "is-electron";
 import taskHelper from "./helpers/tasksHelper";
 import notifications from "./helpers/notifications";
 import clearDataModal from "./components/comfirmModals/clearDataModal.vue";
@@ -190,7 +187,6 @@ export default {
     toDoList,
     sideBar,
     removeCustomList,
-    splashScreen,
     aboutModal,
     welcomeModal,
     tipsModal,
@@ -247,16 +243,13 @@ export default {
     window.addEventListener("resize", this.weekResetScroll);
     document.onreadystatechange = () => {
       if (document.readyState == "complete") {
-        setTimeout(this.hideSplash, 4500);
+        setTimeout(this.hideSplash, 500);
       }
     };
 
     if (this.$store.getters.config.importing) {
       this.$store.commit("updateConfig", { val: false, key: "importing" });
       configRepository.update(this.$store.getters.config);
-      if (isElectron()) {
-        this.syncElectronConfig();
-      }
     }
 
     this.resetAppOnDayChange();
@@ -318,18 +311,7 @@ export default {
           .focus();
       });
     },
-    isElectron: function () {
-      return false;
-    },
     hideSplash: function () {
-      if (this.isElectron()) {
-        if (this.ipcRenderer.sendSync("is-windows-visible")) {
-          this.$refs.splash.hideSplash();
-        }
-      } else {
-        this.$refs.splash.hideSplash();
-      }
-      this.checksOnLoadApp();
       if (this.$store.getters.config.firstTimeOpen) {
         this.showWelcomeModal();
       }
@@ -390,37 +372,14 @@ export default {
               this.refreshTodayNotifications();
               this.$store.commit("updateConfig", { val: moment().format("YYYYMMDD"), key: "lastDayOpened" });
               configRepository.update(this.$store.getters.config);
-              if (isElectron()) this.showInitialNotification();
             });
           } else {
             this.refreshTodayNotifications();
-            if (isElectron()) this.showInitialNotification();
             this.$store.commit("updateConfig", { val: moment().format("YYYYMMDD"), key: "lastDayOpened" });
             configRepository.update(this.$store.getters.config);
           }
         }
       }
-    },
-    showInitialNotification: function () {
-      if (!(this.$store.getters.config.notificationOnStartup && !this.$store.getters.config.firstTimeOpen)) return;
-      setTimeout(
-        function () {
-          new Notification("WeekToDo", {
-            body: this.initialNotificationText(),
-            icon: "/favicon.ico",
-            silent: true,
-          }).onclick = () => {
-            this.ipcRenderer.send("show-current-window");
-            setTimeout(() => {
-              if (document.getElementById("splashScreen")) {
-                document.getElementById("splashScreen").classList.add("hiddenSplashScreen");
-              }
-            }, 3000);
-          };
-          notifications.playNotificationSound(this.$store.getters.config.notificationSound);
-        }.bind(this),
-        2000
-      );
     },
     initialNotificationText: function () {
       let yesterdayTasks = this.$store.getters.todoLists[moment().subtract(1, "d").format("YYYYMMDD")];
@@ -446,9 +405,6 @@ export default {
 
       setTimeout(
         function () {
-          if (isElectron() && !this.ipcRenderer.sendSync("is-windows-visible")) {
-            window.location.reload();
-          }
           this.refreshTodayNotifications();
           this.resetAppOnDayChange();
         }.bind(this),
@@ -491,34 +447,11 @@ export default {
         configRepository.update(this.$store.getters.config);
       });
     },
-    checkVersion: function () {
-      if (version_json.version != this.$store.getters.config.version) {
-        this.$store.commit("updateConfig", { val: version_json.version, key: "version" });
-        configRepository.update(this.$store.getters.config);
-        var toast = new Toast(document.getElementById("versionChanges"));
-        toast.show();
-      }
-    },
-    checkForUpdates: function () {
-
-    },
-    checksOnLoadApp: function () {
-      this.checkVersion();
-    },
-    showNewVersionToast: function (response) {
-      if (response.data.version != version_json.version) {
-        var toast = new Toast(document.getElementById("newVersionAvailable"));
-        toast.show();
-      }
-    },
     downloadNewVersion: function () {
       window.open("https://weektodo.me", "_blank");
     },
     seeChangeLog: function () {
       window.open("https://weektodo.me/changelog", "_blank");
-    },
-    syncElectronConfig: function () {
-
     },
   },
   computed: {

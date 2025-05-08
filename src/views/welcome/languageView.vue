@@ -58,7 +58,6 @@ export default {
   data() {
     return {
       language: this.$store.getters.config.language,
-      isElectron: () => false,
     };
   },
   methods: {

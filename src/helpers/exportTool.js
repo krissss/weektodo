@@ -2,7 +2,6 @@ import storageRepository from "../repositories/storageRepository";
 import dbRepository from "../repositories/dbRepository";
 import { Toast, Modal } from "bootstrap";
 import migrations from "../migrations/migrations";
-import isElectron from "is-electron";
 
 export default {
   export() {
