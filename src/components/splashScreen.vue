@@ -51,11 +51,11 @@ export default {
     };
   },
   mounted() {
-    const axios = require("axios").default;
-    axios
-      .get("https://weektodo.me/api/sponsors")
-      .then((response) => this.renderSponsor(response))
-      .catch((error) => console.log(error.message));
+    // const axios = require("axios").default;
+    // axios
+    //   .get("https://weektodo.me/api/sponsors")
+    //   .then((response) => this.renderSponsor(response))
+    //   .catch((error) => console.log(error.message));
   },
   methods: {
     hideSplash: function () {

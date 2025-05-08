@@ -1,5 +1,5 @@
 import storageRepository from "./storageRepository";
-import version_json from "../../public/version.json";
+import version_json from "./version";
 import moment from "moment";
 
 export default {

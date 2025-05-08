@@ -167,7 +167,7 @@ import toDoModal from "./views/toDoModal/toDoModal";
 import tipsModal from "./views/tipsModal";
 import { Modal, Toast } from "bootstrap";
 import migrations from "./migrations/migrations";
-import version_json from "../public/version.json";
+import version_json from "./repositories/version";
 import isElectron from "is-electron";
 import taskHelper from "./helpers/tasksHelper";
 import notifications from "./helpers/notifications";
