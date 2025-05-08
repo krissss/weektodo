@@ -71,13 +71,6 @@
                   <input class="form-check-input" type="checkbox" id="customListsSetting" v-model="configData.customList"
                     @change="changeConfig('customList', configData.customList)" />
                 </div>
-
-                <div class="form-check form-switch d-flex px-1 mb-3 justify-content-between">
-                  <label class="form-check-label flex-fill" for="reportErrors">{{ $t("settings.reportErrors")
-                  }}</label>
-                  <input class="form-check-input" type="checkbox" id="reportErrors" v-model="configData.reportErrors"
-                    @change="setSendErrors()" />
-                </div>
               </div>
             </div>
             <div class="tab-pane fade" id="config-behavior">
@@ -342,20 +335,8 @@ export default {
     goHome: function () {
       document.getElementById("config-home-tab").click();
     },
-    setOpenOnStart: function () {
-      this.changeConfig("openOnStartup", this.configData.openOnStartup);
-    },
-    setRunInBackground: function () {
-      this.changeConfig("runInBackground", this.configData.runInBackground);
-    },
     setLanguage: function () {
       this.changeConfig('language', this.configData.language);
-    },
-    setSendErrors: function () {
-      this.changeConfig('reportErrors', this.configData.reportErrors);
-    },
-    setDarkTrayIcon: function () {
-      this.changeConfig('darkTrayIcon', this.configData.darkTrayIcon);
     },
     playSound: function () {
       notifications.playNotificationSound(
