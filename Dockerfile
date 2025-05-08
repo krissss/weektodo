@@ -1,8 +1,23 @@
-FROM node:16-alpine
+ARG NODE_VERSION=20.18.0-alpine
+ARG NGINX_VERSION=stable-alpine
+
+# build
+FROM node:$NODE_VERSION AS builder
+
 WORKDIR /app
-COPY package.json /app
-COPY yarn.lock /app
-RUN yarn install --frozen-lockfile && yarn cache clean
+
+COPY .npmrc package.json pnpm-lock.yaml ./
+RUN corepack enable && npm install -g corepack
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
 COPY . /app
-CMD yarn run serve
-EXPOSE 8080
+
+RUN pnpm run build
+
+# server
+FROM nginx:$NGINX_VERSION
+
+WORKDIR /usr/share/nginx/html
+COPY --from=builder /app/dist ./
+
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
