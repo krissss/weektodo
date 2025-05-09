@@ -27,4 +27,4 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/weektodo:latest
-            ${{ secrets.DOCKER_USERNAME }}/weektodo:${{ github.ref_type == 'tag' && format('-{0}', github.ref_name) || '' }}
+            ${{ secrets.DOCKER_USERNAME }}/weektodo:${{ github.ref_type == 'tag' && format('{0}', github.ref_name) || '' }}
