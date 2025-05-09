@@ -305,8 +305,6 @@ export default {
 </template>
 
 <style scoped lang="scss">
-@import "/src/assets/style/globalVars.scss";
-
 .header-menu-icons {
   margin-left: 6px;
   @include btn-icon;

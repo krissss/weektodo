@@ -467,8 +467,6 @@ export default {
 </template>
 
 <style scoped lang="scss">
-@import "../assets/style/globalVars";
-
 .form-check-input {
   width: 2.8em !important;
   height: 1.4em !important;

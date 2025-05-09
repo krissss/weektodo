@@ -1,7 +1,7 @@
-@import "globalVars";
+@use "globalVars";
 
 body {
-  color: $text-color;
+  color: globalVars.$text-color;
 }
 
 * {
@@ -261,20 +261,20 @@ i {
   width: 90px;
   border: none;
   background-color: unset;
-  color: $btn-color;
+  color: globalVars.$btn-color;
   font-size: 15px;
   cursor: pointer;
   outline: unset;
 
   &:hover {
-    color: $btn-hover-color;
+    color: globalVars.$btn-hover-color;
   }
 
   .dark-theme & {
-    color: $dt-btn-color;
+    color: globalVars.$dt-btn-color;
 
     &:hover {
-      color: $dt-btn-hover-color;
+      color: globalVars.$dt-btn-hover-color;
     }
   }
 }

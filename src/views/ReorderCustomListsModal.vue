@@ -71,8 +71,6 @@ export default {
 </template>
 
 <style scoped lang="scss">
-@import "/src/assets/style/globalVars.scss";
-
 .modal-dialog {
   max-width: 370px;
 }

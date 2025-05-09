@@ -613,8 +613,6 @@ export default {
 </template>
 
 <style scoped lang="scss">
-@import "/src/assets/style/globalVars.scss";
-
 .modal-dialog {
   max-height: 80%;
 

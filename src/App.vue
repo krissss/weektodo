@@ -550,8 +550,6 @@ export default {
 </template>
 
 <style lang="scss">
-@import "/src/assets/style/globalVars.scss";
-
 body {
   line-height: unset !important;
 }
